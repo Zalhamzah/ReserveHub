@@ -1,0 +1,519 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id                String             @id @default(cuid())
+  email             String             @unique
+  password          String
+  firstName         String
+  lastName          String
+  phone             String?
+  role              UserRole           @default(STAFF)
+  isActive          Boolean            @default(true)
+  lastLogin         DateTime?
+  emailVerified     Boolean            @default(false)
+  phoneVerified     Boolean            @default(false)
+  twoFactorEnabled  Boolean            @default(false)
+  businessId        String
+  business          Business           @relation(fields: [businessId], references: [id])
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  bookingsCreated   Booking[]          @relation("BookingCreatedBy")
+  bookingsAssigned  Booking[]          @relation("BookingAssignedTo")
+  shiftSchedules    ShiftSchedule[]
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+model Business {
+  id                 String              @id @default(cuid())
+  name               String
+  slug               String              @unique
+  description        String?
+  email              String
+  phone              String
+  address            String
+  city               String
+  state              String
+  zipCode            String
+  country            String             @default("US")
+  timezone           String             @default("America/New_York")
+  currency           String             @default("USD")
+  website            String?
+  logo               String?
+  businessType       BusinessType       @default(RESTAURANT)
+  subscriptionPlan   SubscriptionPlan   @default(BASIC)
+  isActive           Boolean            @default(true)
+  settings           Json?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  users              User[]
+  locations          Location[]
+  customers          Customer[]
+  bookings           Booking[]
+  tables             Table[]
+  services           Service[]
+  payments           Payment[]
+  posIntegrations    PosIntegration[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+
+  @@map("businesses")
+}
+
+model Location {
+  id                String              @id @default(cuid())
+  name              String
+  address           String
+  city              String
+  state             String
+  zipCode           String
+  phone             String?
+  email             String?
+  businessId        String
+  business          Business            @relation(fields: [businessId], references: [id])
+  isActive          Boolean             @default(true)
+  settings          Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  tables            Table[]
+  bookings          Booking[]
+  shiftSchedules    ShiftSchedule[]
+
+  @@map("locations")
+}
+
+// Customer Management
+model Customer {
+  id                String              @id @default(cuid())
+  email             String?
+  phone             String?
+  firstName         String
+  lastName          String
+  dateOfBirth       DateTime?
+  preferences       Json?
+  tags              String[]
+  vipStatus         VipStatus          @default(REGULAR)
+  totalVisits       Int                @default(0)
+  totalSpent        Float              @default(0)
+  averageSpent      Float              @default(0)
+  lastVisit         DateTime?
+  notes             String?
+  stripeCustomerId  String?             // For Stripe integration
+  businessId        String
+  business          Business           @relation(fields: [businessId], references: [id])
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  bookings          Booking[]
+  payments          Payment[]
+  waitlistEntries   WaitlistEntry[]
+
+  @@unique([email, businessId])
+  @@unique([phone, businessId])
+  @@map("customers")
+}
+
+// Booking Management
+model Booking {
+  id                String              @id @default(cuid())
+  bookingNumber     String              @unique
+  customerId        String
+  customer          Customer            @relation(fields: [customerId], references: [id])
+  businessId        String
+  business          Business            @relation(fields: [businessId], references: [id])
+  locationId        String?
+  location          Location?           @relation(fields: [locationId], references: [id])
+  tableId           String?
+  table             Table?              @relation(fields: [tableId], references: [id])
+  serviceId         String?
+  service           Service?            @relation(fields: [serviceId], references: [id])
+  bookingDate       DateTime
+  bookingTime       DateTime
+  duration          Int                 @default(90) // minutes
+  partySize         Int
+  status            BookingStatus       @default(PENDING)
+  confirmationCode  String              @unique
+  specialRequests   String?
+  notes             String?
+  source            BookingSource       @default(DIRECT)
+  createdById       String
+  createdBy         User                @relation("BookingCreatedBy", fields: [createdById], references: [id])
+  assignedToId      String?
+  assignedTo        User?               @relation("BookingAssignedTo", fields: [assignedToId], references: [id])
+  remindersSent     Int                 @default(0)
+  totalAmount       Float?
+  depositAmount     Float?
+  isNoShow          Boolean             @default(false)
+  noShowReason      String?
+  cancelledAt       DateTime?
+  cancelledReason   String?
+  checkInTime       DateTime?
+  checkOutTime      DateTime?
+  actualDuration    Int?
+  rating            Float?
+  feedback          String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  payments          Payment[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+
+  @@map("bookings")
+}
+
+// Waitlist Management
+model WaitlistEntry {
+  id                String              @id @default(cuid())
+  customerId        String
+  customer          Customer            @relation(fields: [customerId], references: [id])
+  businessId        String
+  locationId        String?
+  partySize         Int
+  preferredTime     DateTime?
+  estimatedWaitTime Int? // minutes
+  actualWaitTime    Int? // minutes
+  position          Int
+  status            WaitlistStatus      @default(WAITING)
+  notificationsSent Int                 @default(0)
+  specialRequests   String?
+  joinedAt          DateTime            @default(now())
+  seatedAt          DateTime?
+  leftAt            DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@map("waitlist_entries")
+}
+
+// Table Management
+model Table {
+  id                String              @id @default(cuid())
+  businessId        String
+  business          Business            @relation(fields: [businessId], references: [id])
+  locationId        String?
+  location          Location?           @relation(fields: [locationId], references: [id])
+  number            String
+  name              String?
+  capacity          Int
+  minCapacity       Int?
+  maxCapacity       Int?
+  type              TableType          @default(REGULAR) // Renamed from tableType
+  position          Json? // {x: number, y: number}
+  dimensions        Json? // {width: number, height: number}
+  shape             TableShape         @default(SQUARE)
+  isActive          Boolean            @default(true)
+  isAvailable       Boolean            @default(true)
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  bookings          Booking[]
+  availability      TableAvailability[]
+
+  @@unique([businessId, locationId, number])
+  @@map("tables")
+}
+
+model TableAvailability {
+  id                String              @id @default(cuid())
+  tableId           String
+  table             Table               @relation(fields: [tableId], references: [id])
+  date              DateTime
+  startTime         DateTime
+  endTime           DateTime
+  isAvailable       Boolean             @default(true)
+  reason            String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@unique([tableId, date, startTime])
+  @@map("table_availability")
+}
+
+// Service Management
+model Service {
+  id                String              @id @default(cuid())
+  name              String
+  description       String?
+  duration          Int                 @default(60) // minutes
+  price             Float?
+  category          String?
+  businessId        String
+  business          Business            @relation(fields: [businessId], references: [id])
+  isActive          Boolean             @default(true)
+  settings          Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  bookings          Booking[]
+
+  @@map("services")
+}
+
+// Payment Management
+model Payment {
+  id                String              @id @default(cuid())
+  bookingId         String?
+  booking           Booking?            @relation(fields: [bookingId], references: [id])
+  customerId        String
+  customer          Customer            @relation(fields: [customerId], references: [id])
+  businessId        String
+  business          Business            @relation(fields: [businessId], references: [id])
+  amount            Float
+  currency          String              @default("USD")
+  method            PaymentMethod       // Renamed from paymentMethod
+  gateway           PaymentGateway      // Renamed from paymentGateway  
+  gatewayTransactionId String?
+  status            PaymentStatus       @default(PENDING)
+  description       String?
+  metadata          Json?
+  processedAt       DateTime?           // When payment was processed
+  refundAmount      Float?              @default(0) // Renamed from refundedAmount
+  refundedAt        DateTime?
+  failureReason     String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@map("payments")
+}
+
+// POS Integration
+model PosIntegration {
+  id                String              @id @default(cuid())
+  businessId        String
+  business          Business            @relation(fields: [businessId], references: [id])
+  posProvider       PosProvider
+  apiKey            String
+  apiSecret         String
+  webhookUrl        String?
+  settings          Json?
+  isActive          Boolean             @default(true)
+  lastSyncAt        DateTime?
+  syncStatus        SyncStatus          @default(PENDING)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@unique([businessId, posProvider])
+  @@map("pos_integrations")
+}
+
+// Staff Management
+model ShiftSchedule {
+  id                String              @id @default(cuid())
+  userId            String
+  user              User                @relation(fields: [userId], references: [id])
+  locationId        String?
+  location          Location?           @relation(fields: [locationId], references: [id])
+  date              DateTime
+  startTime         DateTime
+  endTime           DateTime
+  breakStartTime    DateTime?
+  breakEndTime      DateTime?
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@map("shift_schedules")
+}
+
+// Notification Management
+model Notification {
+  id                String              @id @default(cuid())
+  businessId        String
+  business          Business            @relation(fields: [businessId], references: [id])
+  bookingId         String?
+  booking           Booking?            @relation(fields: [bookingId], references: [id])
+  type              NotificationType
+  channel           NotificationChannel
+  recipient         String // email or phone
+  subject           String?
+  message           String
+  status            NotificationStatus  @default(PENDING)
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  readAt            DateTime?
+  failureReason     String?
+  retryCount        Int                 @default(0)
+  metadata          Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@map("notifications")
+}
+
+// Audit Log
+model AuditLog {
+  id                String              @id @default(cuid())
+  businessId        String
+  business          Business            @relation(fields: [businessId], references: [id])
+  userId            String?
+  user              User?               @relation(fields: [userId], references: [id])
+  bookingId         String?
+  booking           Booking?            @relation(fields: [bookingId], references: [id])
+  action            String
+  entityType        String
+  entityId          String
+  oldValues         Json?
+  newValues         Json?
+  ipAddress         String?
+  userAgent         String?
+  createdAt         DateTime            @default(now())
+
+  @@map("audit_logs")
+}
+
+// Enums
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  STAFF
+  HOST
+}
+
+enum BusinessType {
+  RESTAURANT
+  SALON
+  SPA
+  FITNESS
+  HEALTHCARE
+  PROFESSIONAL_SERVICES
+  OTHER
+}
+
+enum SubscriptionPlan {
+  BASIC
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum VipStatus {
+  REGULAR
+  VIP
+  PREMIUM
+  BLACKLISTED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  SEATED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum BookingSource {
+  DIRECT
+  PHONE
+  WALK_IN
+  ONLINE
+  THIRD_PARTY
+  POS
+}
+
+enum WaitlistStatus {
+  WAITING
+  NOTIFIED
+  SEATED
+  LEFT
+  CANCELLED
+}
+
+enum TableType {
+  REGULAR
+  HIGH_TOP
+  BOOTH
+  BAR
+  OUTDOOR
+  PRIVATE
+  COUNTER
+}
+
+enum TableShape {
+  SQUARE
+  RECTANGLE
+  ROUND
+  OVAL
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  CASH
+  DIGITAL_WALLET
+  BANK_TRANSFER
+  CRYPTOCURRENCY
+}
+
+enum PaymentGateway {
+  STRIPE
+  SQUARE
+  PAYPAL
+  AUTHORIZE_NET
+  BRAINTREE
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PosProvider {
+  TOAST
+  LIGHTSPEED
+  SQUARE
+  CLOVER
+  RESY
+  ORACLE_MICROS
+  NCR_ALOHA
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCING
+  COMPLETED
+  FAILED
+}
+
+enum NotificationType {
+  BOOKING_CONFIRMATION
+  BOOKING_REMINDER
+  BOOKING_CANCELLED
+  WAITLIST_NOTIFICATION
+  PAYMENT_CONFIRMATION
+  PAYMENT_FAILED
+  SYSTEM_ALERT
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  WEBHOOK
+  WHATSAPP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  CANCELLED
+} 

@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReserveHub - Table Reservation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Business Type Selector */
+        .business-selector {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 15px;
+            margin: 20px;
+            padding: 5px;
+            gap: 5px;
+        }
+
+        .business-type {
+            flex: 1;
+            padding: 15px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .business-type.active {
+            background: #ff6b35;
+            color: white;
+            transform: scale(1.02);
+        }
+
+        .business-type:hover {
+            background: #fff3f0;
+        }
+
+        .business-type.active:hover {
+            background: #e55a2b;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .progress {
+            display: flex;
+            background: #f8f9fa;
+            padding: 0;
+        }
+
+        .progress-step {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 3px solid #e9ecef;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .progress-step.active {
+            background: #ff6b35;
+            color: white;
+            border-bottom-color: #ff6b35;
+            animation: pulse 2s infinite;
+        }
+
+        .progress-step.completed {
+            background: #28a745;
+            color: white;
+            border-bottom-color: #28a745;
+        }
+
+        .progress-step.completed::after {
+            content: '✓';
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .content {
+            padding: 40px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                border-radius: 15px;
+                margin: 0;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .progress {
+                flex-direction: column;
+                gap: 1px;
+            }
+
+            .progress-step {
+                padding: 15px;
+                border-bottom: none;
+                border-left: 3px solid #e9ecef;
+            }
+
+            .progress-step.active {
+                border-left-color: #ff6b35;
+            }
+
+            .progress-step.completed {
+                border-left-color: #28a745;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .time-slots {
+                grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+                gap: 10px;
+            }
+
+            .time-slot {
+                padding: 12px 8px;
+                font-size: 14px;
+            }
+
+            .buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .btn {
+                width: 100%;
+                padding: 18px;
+                font-size: 16px;
+            }
+
+            .business-selector {
+                margin: 10px;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .business-type {
+                padding: 18px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .time-slots {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .content {
+                padding: 15px;
+            }
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #ff6b35;
+        }
+
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .time-slot {
+            padding: 15px;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .time-slot::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .time-slot:hover::before {
+            left: 100%;
+        }
+
+        .time-slot:hover {
+            background: #fff3f0;
+            border-color: #ff6b35;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
+        }
+
+        .time-slot.selected {
+            background: #ff6b35;
+            color: white;
+            border-color: #ff6b35;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
+        }
+
+        .time-slot.unavailable {
+            background: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* Service Selection Styles */
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .service-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ff6b35, #f7931e);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .service-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .service-card:hover {
+            border-color: #ff6b35;
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.15);
+            transform: translateY(-3px);
+        }
+
+        .service-card.selected {
+            border-color: #ff6b35;
+            background: #fff3f0;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.2);
+        }
+
+        .service-card.selected::before {
+            transform: scaleX(1);
+        }
+
+        .service-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .service-duration {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .service-price {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ff6b35;
+        }
+
+        /* Staff Selection Styles */
+        .staff-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .staff-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+        }
+
+        .staff-card:hover {
+            border-color: #ff6b35;
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.15);
+            transform: translateY(-3px);
+        }
+
+        .staff-card.selected {
+            border-color: #ff6b35;
+            background: #fff3f0;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.2);
+        }
+
+        .staff-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            margin: 0 auto 10px;
+            transition: all 0.3s ease;
+        }
+
+        .staff-card:hover .staff-avatar {
+            transform: scale(1.1);
+        }
+
+        .staff-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .staff-specialty {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Enhanced Interactive Elements */
+        .interactive-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .interactive-card::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 107, 53, 0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .interactive-card:active::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .floating-action {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: #ff6b35;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .floating-action:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(255, 107, 53, 0.4);
+        }
+
+        /* Loading and Success States */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 300px;
+            animation: bounceIn 0.5s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .success-checkmark {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #28a745;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            animation: checkmark 0.6s ease-in-out;
+        }
+
+        .success-checkmark::after {
+            content: '✓';
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+        }
+
+        @keyframes checkmark {
+            0% { transform: scale(0) rotate(180deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #ff6b35;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #e55a2b;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #1a252f;
+        }
+
+        .selection-display {
+            background: #fff3f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #ffd4c4;
+        }
+
+        .selection-display h3 {
+            color: #d63384;
+            margin-bottom: 15px;
+        }
+
+        .selection-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .selection-item:last-child {
+            border-bottom: none;
+        }
+
+        .confirmation {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .confirmation h2 {
+            color: #28a745;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        .confirmation-details {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #ff6b35;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Additional styling for better visual hierarchy */
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .selection-item span:first-child {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .selection-item span:last-child {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-primary:disabled:hover {
+            background: #ccc;
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ReserveHub</h1>
+            <p id="header-subtitle">Choose your booking type to get started</p>
+        </div>
+
+        <!-- Business Type Selector -->
+        <div class="business-selector">
+            <button class="business-type active" data-type="restaurant">
+                🍽️ Restaurant
+            </button>
+            <button class="business-type" data-type="salon">
+                💄 Salon
+            </button>
+        </div>
+
+        <div class="progress">
+            <div class="progress-step active" id="step-indicator-1">
+                <strong id="step-1-label">Date & Time</strong>
+            </div>
+            <div class="progress-step" id="step-indicator-2">
+                <strong id="step-2-label">Party Details</strong>
+            </div>
+            <div class="progress-step" id="step-indicator-3">
+                <strong id="step-3-label">Your Info</strong>
+            </div>
+            <div class="progress-step" id="step-indicator-4">
+                <strong id="step-4-label">Confirmation</strong>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Step 1: Date & Time Selection -->
+            <div class="step active" id="step-1">
+                <h2 id="step-1-title">Select Date & Time</h2>
+                
+                <!-- Restaurant Booking -->
+                <div id="restaurant-booking" class="booking-type">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reservation-date">Date</label>
+                            <input type="date" id="reservation-date" min="2025-01-10" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="party-size">Party Size</label>
+                            <select id="party-size" required>
+                                <option value="">Select party size</option>
+                                <option value="1">1 person</option>
+                                <option value="2">2 people</option>
+                                <option value="3">3 people</option>
+                                <option value="4">4 people</option>
+                                <option value="5">5 people</option>
+                                <option value="6">6 people</option>
+                                <option value="7">7 people</option>
+                                <option value="8">8 people</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Available Time Slots</label>
+                        <div class="loading" id="slots-loading" style="display: none;">
+                            <div class="spinner"></div>
+                            <p>Loading available times...</p>
+                        </div>
+                        <div class="time-slots" id="time-slots">
+                            <!-- Time slots will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Salon Booking -->
+                <div id="salon-booking" class="booking-type" style="display: none;">
+                    <div class="form-group">
+                        <label for="salon-date">Date</label>
+                        <input type="date" id="salon-date" min="2025-01-10" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Select Services</label>
+                        <div class="service-grid" id="service-grid">
+                            <!-- Services will be loaded here -->
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="staff-selection" style="display: none;">
+                        <label>Choose Your Stylist</label>
+                        <div class="staff-grid" id="staff-grid">
+                            <!-- Staff will be loaded here -->
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="salon-time-slots" style="display: none;">
+                        <label>Available Time Slots</label>
+                        <div class="loading" id="salon-slots-loading" style="display: none;">
+                            <div class="spinner"></div>
+                            <p>Loading available times...</p>
+                        </div>
+                        <div class="time-slots" id="salon-time-slots-container">
+                            <!-- Time slots will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="buttons">
+                    <div></div>
+                    <button type="button" class="btn btn-primary" id="next-to-step-2" disabled>
+                        Next Step →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Party Details -->
+            <div class="step" id="step-2">
+                <h2>Party Details</h2>
+                
+                <div class="selection-display">
+                    <h3>Your Selection</h3>
+                    <div class="selection-item">
+                        <span>Date:</span>
+                        <span id="selected-date">-</span>
+                    </div>
+                    <div class="selection-item">
+                        <span>Time:</span>
+                        <span id="selected-time">-</span>
+                    </div>
+                    <div class="selection-item">
+                        <span>Party Size:</span>
+                        <span id="selected-party-size">-</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="special-requests">Special Requests (Optional)</label>
+                    <textarea id="special-requests" rows="4" placeholder="Any dietary restrictions, celebrations, or special accommodations..."></textarea>
+                </div>
+
+                <div class="buttons">
+                    <button type="button" class="btn btn-secondary" id="back-to-step-1">
+                        ← Previous
+                    </button>
+                    <button type="button" class="btn btn-primary" id="next-to-step-3">
+                        Next Step →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Your Information -->
+            <div class="step" id="step-3">
+                <h2>Your Information</h2>
+                
+                <div class="selection-display">
+                    <h3>Reservation Summary</h3>
+                    <div class="selection-item">
+                        <span>Date:</span>
+                        <span id="summary-date">-</span>
+                    </div>
+                    <div class="selection-item">
+                        <span>Time:</span>
+                        <span id="summary-time">-</span>
+                    </div>
+                    <div class="selection-item">
+                        <span>Party Size:</span>
+                        <span id="summary-party-size">-</span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="first-name">First Name</label>
+                        <input type="text" id="first-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="last-name">Last Name</label>
+                        <input type="text" id="last-name" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" required>
+                    </div>
+                </div>
+
+                <div class="buttons">
+                    <button type="button" class="btn btn-secondary" id="back-to-step-2">
+                        ← Previous
+                    </button>
+                    <button type="button" class="btn btn-primary" id="submit-reservation">
+                        Complete Reservation
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 4: Confirmation -->
+            <div class="step" id="step-4">
+                <div class="confirmation">
+                    <h2>🎉 Reservation Confirmed!</h2>
+                    <p>Your table has been reserved successfully.</p>
+                    
+                    <div class="confirmation-details" id="confirmation-details">
+                        <!-- Confirmation details will be inserted here -->
+                    </div>
+
+                    <button type="button" class="btn btn-primary" onclick="location.reload()">
+                        Make Another Reservation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Processing your booking...</p>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="floating-action" id="floating-action" title="Scroll to top">
+        ↑
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            BUSINESS_ID: 'cmcvm0c700001183pd3xmxx4e', // Test Restaurant business ID
+            API_BASE_URL: '/api/v1'
+        };
+
+        // State management
+        let currentStep = 1;
+        let businessType = 'restaurant';
+        let selectedDate = '';
+        let selectedTime = '';
+        let selectedPartySize = '';
+        let selectedServices = [];
+        let selectedStaff = '';
+        let reservationData = {};
+
+        // Sample salon data (in real app, this would come from API)
+        const salonServices = [
+            { id: 1, name: 'Haircut & Styling', duration: '45 mins', price: '$50' },
+            { id: 2, name: 'Hair Coloring', duration: '120 mins', price: '$120' },
+            { id: 3, name: 'Hair Wash & Blow Dry', duration: '30 mins', price: '$35' },
+            { id: 4, name: 'Highlights', duration: '90 mins', price: '$85' },
+            { id: 5, name: 'Keratin Treatment', duration: '180 mins', price: '$200' },
+            { id: 6, name: 'Beard Trim', duration: '20 mins', price: '$25' }
+        ];
+
+        const salonStaff = [
+            { id: 1, name: 'Sarah Johnson', specialty: 'Color Specialist', avatar: 'SJ' },
+            { id: 2, name: 'Mike Chen', specialty: 'Master Stylist', avatar: 'MC' },
+            { id: 3, name: 'Emma Wilson', specialty: 'Cutting Expert', avatar: 'EW' },
+            { id: 4, name: 'David Rodriguez', specialty: 'Beard & Mustache', avatar: 'DR' }
+        ];
+
+        // DOM Elements
+        const elements = {
+            reservationDate: document.getElementById('reservation-date'),
+            partySize: document.getElementById('party-size'),
+            timeSlotsContainer: document.getElementById('time-slots'),
+            slotsLoading: document.getElementById('slots-loading'),
+            specialRequests: document.getElementById('special-requests'),
+            firstName: document.getElementById('first-name'),
+            lastName: document.getElementById('last-name'),
+            email: document.getElementById('email'),
+            phone: document.getElementById('phone')
+        };
+
+        // Initialize application
+        window.onload = function() {
+            console.log('Application starting...');
+            initializeDatePicker();
+            setupEventListeners();
+            setupBusinessTypeSelector();
+            loadSalonServices();
+            loadSalonStaff();
+            updateProgressIndicators();
+            updateUI();
+        };
+
+        function initializeDatePicker() {
+            const today = new Date();
+            const minDate = new Date(today);
+            minDate.setDate(today.getDate() + 1); // Tomorrow at earliest
+            
+            const maxDate = new Date(today);
+            maxDate.setDate(today.getDate() + 60); // 60 days from today
+            
+            elements.reservationDate.min = formatDateForInput(minDate);
+            elements.reservationDate.max = formatDateForInput(maxDate);
+            
+            console.log('Date picker initialized:', {
+                min: elements.reservationDate.min,
+                max: elements.reservationDate.max
+            });
+        }
+
+        function formatDateForInput(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function setupEventListeners() {
+            console.log('Setting up event listeners...');
+
+            // Date and party size change handlers
+            elements.reservationDate.addEventListener('change', loadTimeSlots);
+            elements.partySize.addEventListener('change', loadTimeSlots);
+
+            // Salon date change handler
+            document.getElementById('salon-date').addEventListener('change', handleSalonDateChange);
+
+            // Navigation buttons
+            document.getElementById('next-to-step-2').addEventListener('click', () => goToStep(2));
+            document.getElementById('back-to-step-1').addEventListener('click', () => goToStep(1));
+            document.getElementById('next-to-step-3').addEventListener('click', () => goToStep(3));
+            document.getElementById('back-to-step-2').addEventListener('click', () => goToStep(2));
+            document.getElementById('submit-reservation').addEventListener('click', submitReservation);
+
+            // Floating action button
+            document.getElementById('floating-action').addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            // Show/hide floating action button based on scroll
+            window.addEventListener('scroll', () => {
+                const floatingAction = document.getElementById('floating-action');
+                if (window.pageYOffset > 300) {
+                    floatingAction.style.display = 'flex';
+                } else {
+                    floatingAction.style.display = 'none';
+                }
+            });
+
+            console.log('Event listeners set up successfully');
+        }
+
+        function setupBusinessTypeSelector() {
+            const businessButtons = document.querySelectorAll('.business-type');
+            
+            businessButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    businessButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Update business type
+                    businessType = this.dataset.type;
+                    
+                    // Update UI based on business type
+                    updateUI();
+                    
+                    // Reset form state
+                    resetFormState();
+                });
+            });
+        }
+
+        function updateUI() {
+            const headerSubtitle = document.getElementById('header-subtitle');
+            const step1Title = document.getElementById('step-1-title');
+            const step2Label = document.getElementById('step-2-label');
+            const restaurantBooking = document.getElementById('restaurant-booking');
+            const salonBooking = document.getElementById('salon-booking');
+            
+            if (businessType === 'restaurant') {
+                headerSubtitle.textContent = 'Reserve your table in just a few simple steps';
+                step1Title.textContent = 'Select Date & Time';
+                step2Label.textContent = 'Party Details';
+                restaurantBooking.style.display = 'block';
+                salonBooking.style.display = 'none';
+            } else {
+                headerSubtitle.textContent = 'Book your salon appointment with ease';
+                step1Title.textContent = 'Select Services & Time';
+                step2Label.textContent = 'Appointment Details';
+                restaurantBooking.style.display = 'none';
+                salonBooking.style.display = 'block';
+            }
+        }
+
+        function resetFormState() {
+            selectedDate = '';
+            selectedTime = '';
+            selectedPartySize = '';
+            selectedServices = [];
+            selectedStaff = '';
+            
+            // Reset form inputs
+            elements.reservationDate.value = '';
+            elements.partySize.value = '';
+            document.getElementById('salon-date').value = '';
+            
+            // Clear selections
+            document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+            
+            // Hide conditional elements
+            document.getElementById('staff-selection').style.display = 'none';
+            document.getElementById('salon-time-slots').style.display = 'none';
+            
+            // Clear time slots
+            elements.timeSlotsContainer.innerHTML = '';
+            document.getElementById('salon-time-slots-container').innerHTML = '';
+            
+            // Disable next button
+            document.getElementById('next-to-step-2').disabled = true;
+        }
+
+        function loadSalonServices() {
+            const serviceGrid = document.getElementById('service-grid');
+            serviceGrid.innerHTML = '';
+            
+            salonServices.forEach(service => {
+                const serviceCard = document.createElement('div');
+                serviceCard.className = 'service-card interactive-card';
+                serviceCard.dataset.serviceId = service.id;
+                serviceCard.innerHTML = `
+                    <div class="service-name">${service.name}</div>
+                    <div class="service-duration">${service.duration}</div>
+                    <div class="service-price">${service.price}</div>
+                `;
+                
+                serviceCard.addEventListener('click', () => selectService(service.id, serviceCard));
+                serviceGrid.appendChild(serviceCard);
+            });
+        }
+
+        function loadSalonStaff() {
+            const staffGrid = document.getElementById('staff-grid');
+            staffGrid.innerHTML = '';
+            
+            salonStaff.forEach(staff => {
+                const staffCard = document.createElement('div');
+                staffCard.className = 'staff-card interactive-card';
+                staffCard.dataset.staffId = staff.id;
+                staffCard.innerHTML = `
+                    <div class="staff-avatar">${staff.avatar}</div>
+                    <div class="staff-name">${staff.name}</div>
+                    <div class="staff-specialty">${staff.specialty}</div>
+                `;
+                
+                staffCard.addEventListener('click', () => selectStaff(staff.id, staffCard));
+                staffGrid.appendChild(staffCard);
+            });
+        }
+
+        function selectService(serviceId, element) {
+            const isSelected = element.classList.contains('selected');
+            
+            if (isSelected) {
+                // Deselect service
+                element.classList.remove('selected');
+                selectedServices = selectedServices.filter(id => id !== serviceId);
+            } else {
+                // Select service
+                element.classList.add('selected');
+                selectedServices.push(serviceId);
+            }
+            
+            // Show staff selection if at least one service is selected
+            const staffSelection = document.getElementById('staff-selection');
+            if (selectedServices.length > 0) {
+                staffSelection.style.display = 'block';
+            } else {
+                staffSelection.style.display = 'none';
+                document.getElementById('salon-time-slots').style.display = 'none';
+                selectedStaff = '';
+                document.querySelectorAll('.staff-card').forEach(card => card.classList.remove('selected'));
+            }
+            
+            updateSalonNextButton();
+        }
+
+        function selectStaff(staffId, element) {
+            // Remove selection from all staff cards
+            document.querySelectorAll('.staff-card').forEach(card => card.classList.remove('selected'));
+            
+            // Select clicked staff
+            element.classList.add('selected');
+            selectedStaff = staffId;
+            
+            // Show time slots if staff is selected
+            const salonTimeSlots = document.getElementById('salon-time-slots');
+            salonTimeSlots.style.display = 'block';
+            
+            // Load time slots for selected staff
+            loadSalonTimeSlots();
+            
+            updateSalonNextButton();
+        }
+
+        function handleSalonDateChange() {
+            const date = document.getElementById('salon-date').value;
+            selectedDate = date;
+            
+            if (selectedServices.length > 0 && selectedStaff) {
+                loadSalonTimeSlots();
+            }
+        }
+
+        function loadSalonTimeSlots() {
+            const date = document.getElementById('salon-date').value;
+            const container = document.getElementById('salon-time-slots-container');
+            const loading = document.getElementById('salon-slots-loading');
+            
+            if (!date || selectedServices.length === 0 || !selectedStaff) {
+                container.innerHTML = '<p>Please select date, services, and staff first</p>';
+                return;
+            }
+            
+            loading.style.display = 'block';
+            container.innerHTML = '';
+            
+            // Simulate API call with sample time slots
+            setTimeout(() => {
+                const timeSlots = [
+                    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+                    '12:00', '12:30', '14:00', '14:30', '15:00', '15:30',
+                    '16:00', '16:30', '17:00', '17:30', '18:00', '18:30'
+                ];
+                
+                timeSlots.forEach(time => {
+                    const slotElement = document.createElement('div');
+                    slotElement.className = 'time-slot';
+                    slotElement.textContent = time;
+                    slotElement.dataset.time = time;
+                    slotElement.addEventListener('click', () => selectSalonTimeSlot(time, slotElement));
+                    container.appendChild(slotElement);
+                });
+                
+                loading.style.display = 'none';
+            }, 1000);
+        }
+
+        function selectSalonTimeSlot(time, element) {
+            // Remove selection from all slots
+            document.querySelectorAll('#salon-time-slots-container .time-slot').forEach(slot => {
+                slot.classList.remove('selected');
+            });
+            
+            // Add selection to clicked slot
+            element.classList.add('selected');
+            selectedTime = time;
+            
+            updateSalonNextButton();
+        }
+
+        function updateSalonNextButton() {
+            const nextButton = document.getElementById('next-to-step-2');
+            const date = document.getElementById('salon-date').value;
+            
+            if (businessType === 'salon') {
+                nextButton.disabled = !(date && selectedServices.length > 0 && selectedStaff && selectedTime);
+            }
+        }
+
+        async function loadTimeSlots() {
+            const date = elements.reservationDate.value;
+            const partySize = elements.partySize.value;
+
+            console.log('Loading time slots for:', { date, partySize });
+
+            if (!date || !partySize) {
+                console.log('Date or party size not selected, clearing slots');
+                elements.timeSlotsContainer.innerHTML = '<p>Please select both date and party size</p>';
+                document.getElementById('next-to-step-2').disabled = true;
+                return;
+            }
+
+            // Show loading
+            elements.slotsLoading.style.display = 'block';
+            elements.timeSlotsContainer.innerHTML = '';
+            document.getElementById('next-to-step-2').disabled = true;
+
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/bookings/public/availability?businessId=${CONFIG.BUSINESS_ID}&date=${date}&partySize=${partySize}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('API response:', result);
+
+                if (result.success && result.data && result.data.availableSlots) {
+                    displayTimeSlots(result.data.availableSlots);
+                } else {
+                    throw new Error('Invalid response format');
+                }
+
+            } catch (error) {
+                console.error('Error loading time slots:', error);
+                elements.timeSlotsContainer.innerHTML = `
+                    <div class="error-message">
+                        <strong>Error loading available times</strong><br>
+                        ${error.message}. Please try again.
+                    </div>
+                `;
+            } finally {
+                elements.slotsLoading.style.display = 'none';
+            }
+        }
+
+        function displayTimeSlots(slots) {
+            console.log('Displaying time slots:', slots);
+
+            if (!slots || slots.length === 0) {
+                elements.timeSlotsContainer.innerHTML = '<p>No available time slots for this date and party size.</p>';
+                return;
+            }
+
+            elements.timeSlotsContainer.innerHTML = '';
+
+            slots.forEach(slot => {
+                const slotElement = document.createElement('div');
+                slotElement.className = `time-slot ${slot.available ? '' : 'unavailable'}`;
+                slotElement.textContent = slot.time;
+                slotElement.dataset.time = slot.time;
+
+                if (slot.available) {
+                    slotElement.addEventListener('click', () => selectTimeSlot(slot.time, slotElement));
+                }
+
+                elements.timeSlotsContainer.appendChild(slotElement);
+            });
+        }
+
+        function selectTimeSlot(time, element) {
+            console.log('Time slot selected:', time);
+
+            // Remove selection from all slots
+            document.querySelectorAll('.time-slot').forEach(slot => {
+                slot.classList.remove('selected');
+            });
+
+            // Add selection to clicked slot
+            element.classList.add('selected');
+
+            // Update state
+            selectedTime = time;
+            selectedDate = elements.reservationDate.value;
+            selectedPartySize = elements.partySize.value;
+
+            // Enable next button
+            document.getElementById('next-to-step-2').disabled = false;
+
+            console.log('Selection updated:', { selectedDate, selectedTime, selectedPartySize });
+        }
+
+        function goToStep(step) {
+            console.log(`Moving to step ${step}`);
+
+            // Validation for step 2
+            if (step === 2) {
+                if (businessType === 'restaurant') {
+                    if (!selectedDate || !selectedTime || !selectedPartySize) {
+                        alert('Please select a date, time, and party size first.');
+                        return;
+                    }
+                } else {
+                    if (!selectedDate || !selectedTime || selectedServices.length === 0 || !selectedStaff) {
+                        alert('Please select date, services, staff, and time first.');
+                        return;
+                    }
+                }
+            }
+
+            if (step === 3) {
+                updateSelectionDisplay();
+            }
+
+            // Hide all steps
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            
+            // Show target step
+            document.getElementById(`step-${step}`).classList.add('active');
+            
+            currentStep = step;
+            updateProgressIndicators();
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateProgressIndicators() {
+            document.querySelectorAll('.progress-step').forEach((step, index) => {
+                step.classList.remove('active', 'completed');
+                
+                if (index + 1 === currentStep) {
+                    step.classList.add('active');
+                } else if (index + 1 < currentStep) {
+                    step.classList.add('completed');
+                }
+            });
+        }
+
+        function updateSelectionDisplay() {
+            if (businessType === 'restaurant') {
+                // Update step 2 display
+                document.getElementById('selected-date').textContent = formatDisplayDate(selectedDate);
+                document.getElementById('selected-time').textContent = selectedTime;
+                document.getElementById('selected-party-size').textContent = `${selectedPartySize} ${selectedPartySize === '1' ? 'person' : 'people'}`;
+
+                // Update step 3 summary
+                document.getElementById('summary-date').textContent = formatDisplayDate(selectedDate);
+                document.getElementById('summary-time').textContent = selectedTime;
+                document.getElementById('summary-party-size').textContent = `${selectedPartySize} ${selectedPartySize === '1' ? 'person' : 'people'}`;
+            } else {
+                // Salon booking display
+                const selectedServicesText = selectedServices.map(id => {
+                    const service = salonServices.find(s => s.id === id);
+                    return service ? service.name : '';
+                }).join(', ');
+                
+                const selectedStaffText = selectedStaff ? 
+                    salonStaff.find(s => s.id === selectedStaff)?.name : '';
+                
+                // Update step 2 display
+                document.getElementById('selected-date').textContent = formatDisplayDate(selectedDate);
+                document.getElementById('selected-time').textContent = selectedTime;
+                document.getElementById('selected-party-size').textContent = selectedServicesText;
+
+                // Update step 3 summary
+                document.getElementById('summary-date').textContent = formatDisplayDate(selectedDate);
+                document.getElementById('summary-time').textContent = selectedTime;
+                document.getElementById('summary-party-size').textContent = `${selectedServicesText} with ${selectedStaffText}`;
+            }
+        }
+
+        function formatDisplayDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        async function submitReservation() {
+            console.log('Submitting reservation...');
+
+            // Show loading overlay
+            showLoadingOverlay();
+
+            // Validate form
+            const baseFormData = {
+                firstName: elements.firstName.value.trim(),
+                lastName: elements.lastName.value.trim(),
+                email: elements.email.value.trim(),
+                phone: elements.phone.value.trim(),
+                businessId: CONFIG.BUSINESS_ID,
+                bookingDate: selectedDate,
+                bookingTime: selectedTime,
+                specialRequests: elements.specialRequests.value.trim()
+            };
+
+            let formData;
+            
+            if (businessType === 'restaurant') {
+                formData = {
+                    ...baseFormData,
+                    partySize: parseInt(selectedPartySize)
+                };
+            } else {
+                // Salon booking
+                const selectedServicesData = selectedServices.map(id => 
+                    salonServices.find(s => s.id === id)
+                );
+                const selectedStaffData = salonStaff.find(s => s.id === selectedStaff);
+                
+                formData = {
+                    ...baseFormData,
+                    services: selectedServicesData,
+                    staff: selectedStaffData,
+                    businessType: 'salon'
+                };
+            }
+
+            // Basic validation
+            if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
+                hideLoadingOverlay();
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(formData.email)) {
+                hideLoadingOverlay();
+                alert('Please enter a valid email address.');
+                return;
+            }
+
+            console.log('Form data:', formData);
+
+            // Disable submit button
+            const submitButton = document.getElementById('submit-reservation');
+            const originalText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = 'Creating Booking...';
+
+            try {
+                let response, result;
+                
+                if (businessType === 'restaurant') {
+                    // Use existing restaurant API
+                    response = await fetch(`${CONFIG.API_BASE_URL}/bookings/public/reserve`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                    result = await response.json();
+                } else {
+                    // Simulate salon booking API call
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    // Mock successful salon booking response
+                    result = {
+                        success: true,
+                        data: {
+                            booking: {
+                                id: 'salon_' + Date.now(),
+                                bookingNumber: 'SB' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+                                confirmationCode: Math.random().toString(36).substr(2, 6).toUpperCase(),
+                                customer: {
+                                    firstName: formData.firstName,
+                                    lastName: formData.lastName,
+                                    email: formData.email
+                                },
+                                bookingDate: formData.bookingDate,
+                                bookingTime: new Date(`${formData.bookingDate}T${formData.bookingTime}`).toISOString(),
+                                services: formData.services,
+                                staff: formData.staff,
+                                specialRequests: formData.specialRequests,
+                                businessType: 'salon'
+                            }
+                        }
+                    };
+                    response = { ok: true };
+                }
+
+                console.log('Booking response:', result);
+
+                if (response.ok && result.success) {
+                    reservationData = result.data.booking;
+                    hideLoadingOverlay();
+                    showSuccessAnimation();
+                    setTimeout(() => {
+                        showConfirmation();
+                        goToStep(4);
+                    }, 1500);
+                } else {
+                    throw new Error(result.message || `Failed to create ${businessType} booking`);
+                }
+
+            } catch (error) {
+                console.error(`Error submitting ${businessType} booking:`, error);
+                hideLoadingOverlay();
+                alert(`Error creating ${businessType} booking: ${error.message}. Please try again.`);
+            } finally {
+                // Re-enable submit button
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+            }
+        }
+
+        function showLoadingOverlay() {
+            document.getElementById('loading-overlay').classList.add('active');
+        }
+
+        function hideLoadingOverlay() {
+            document.getElementById('loading-overlay').classList.remove('active');
+        }
+
+        function showSuccessAnimation() {
+            const overlay = document.getElementById('loading-overlay');
+            const content = overlay.querySelector('.loading-content');
+            
+            content.innerHTML = `
+                <div class="success-checkmark"></div>
+                <h3>Booking Confirmed!</h3>
+                <p>Redirecting to confirmation...</p>
+            `;
+        }
+
+        function showConfirmation() {
+            const confirmationDetails = document.getElementById('confirmation-details');
+            
+            let partySizeOrServices = '';
+            if (businessType === 'restaurant') {
+                partySizeOrServices = `
+                    <div class="selection-item">
+                        <span><strong>Party Size:</strong></span>
+                        <span>${reservationData.partySize} ${reservationData.partySize === 1 ? 'person' : 'people'}</span>
+                    </div>
+                `;
+            } else {
+                // Salon booking
+                const servicesText = reservationData.services.map(service => service.name).join(', ');
+                partySizeOrServices = `
+                    <div class="selection-item">
+                        <span><strong>Services:</strong></span>
+                        <span>${servicesText}</span>
+                    </div>
+                    <div class="selection-item">
+                        <span><strong>Stylist:</strong></span>
+                        <span>${reservationData.staff.name}</span>
+                    </div>
+                `;
+            }
+            
+            confirmationDetails.innerHTML = `
+                <div class="selection-item">
+                    <span><strong>Confirmation Code:</strong></span>
+                    <span>${reservationData.confirmationCode}</span>
+                </div>
+                <div class="selection-item">
+                    <span><strong>Booking Number:</strong></span>
+                    <span>${reservationData.bookingNumber}</span>
+                </div>
+                <div class="selection-item">
+                    <span><strong>Date:</strong></span>
+                    <span>${formatDisplayDate(reservationData.bookingDate)}</span>
+                </div>
+                <div class="selection-item">
+                    <span><strong>Time:</strong></span>
+                    <span>${new Date(reservationData.bookingTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                ${partySizeOrServices}
+                <div class="selection-item">
+                    <span><strong>Customer:</strong></span>
+                    <span>${reservationData.customer.firstName} ${reservationData.customer.lastName}</span>
+                </div>
+                <div class="selection-item">
+                    <span><strong>Email:</strong></span>
+                    <span>${reservationData.customer.email}</span>
+                </div>
+                ${reservationData.table ? `
+                <div class="selection-item">
+                    <span><strong>Table:</strong></span>
+                    <span>${reservationData.table.number}</span>
+                </div>
+                ` : ''}
+                ${reservationData.specialRequests ? `
+                <div class="selection-item">
+                    <span><strong>Special Requests:</strong></span>
+                    <span>${reservationData.specialRequests}</span>
+                </div>
+                ` : ''}
+            `;
+        }
+    </script>
+</body>
+</html> 
