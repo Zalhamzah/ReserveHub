@@ -1506,6 +1506,7 @@
                 
                 formData = {
                     ...baseFormData,
+                    partySize: 1, // Salon bookings are always for 1 person
                     services: selectedServicesData,
                     staff: selectedStaffData,
                     businessType: 'salon'
@@ -1528,6 +1529,7 @@
             }
 
             console.log('Form data:', formData);
+            console.log('Business type:', businessType);
 
             // Disable submit button
             const submitButton = document.getElementById('submit-reservation');
@@ -1550,7 +1552,11 @@
                     result = await response.json();
                 } else {
                     // Simulate salon booking API call
+                    console.log('Processing salon booking (mocked)...');
                     await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    // Create properly formatted booking time
+                    const bookingDateTime = `${formData.bookingDate}T${formData.bookingTime}:00`;
                     
                     // Mock successful salon booking response
                     result = {
@@ -1566,11 +1572,15 @@
                                     email: formData.email
                                 },
                                 bookingDate: formData.bookingDate,
-                                bookingTime: new Date(`${formData.bookingDate}T${formData.bookingTime}`).toISOString(),
+                                bookingTime: new Date(bookingDateTime).toISOString(),
                                 services: formData.services,
                                 staff: formData.staff,
                                 specialRequests: formData.specialRequests,
                                 businessType: 'salon'
+                            },
+                            whatsapp: {
+                                link: `https://wa.me/60142779902?text=🎉%20*Booking%20Confirmed!*%0A%0AHi%20${formData.firstName}%20${formData.lastName}!%20Your%20${formData.services.map(s => s.name).join(', ')}%20appointment%20is%20confirmed.%0A%0A📅%20*Date:*%20${formData.bookingDate}%0A⏰%20*Time:*%20${formData.bookingTime}%0A💇%20*Stylist:*%20${formData.staff.name}%0A%0AWe%20look%20forward%20to%20serving%20you!`,
+                                qr: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
                             }
                         }
                     };
@@ -1581,6 +1591,8 @@
 
                 if (response.ok && result.success) {
                     reservationData = result.data.booking;
+                    // Store full booking response for WhatsApp access
+                    window.lastBookingResponse = result.data;
                     hideLoadingOverlay();
                     showSuccessAnimation();
                     setTimeout(() => {
@@ -1686,6 +1698,34 @@
                 </div>
                 ` : ''}
             `;
+
+            // Add WhatsApp confirmation section if available
+            if (reservationData.whatsapp || (window.lastBookingResponse && window.lastBookingResponse.whatsapp)) {
+                const whatsappData = reservationData.whatsapp || window.lastBookingResponse.whatsapp;
+                
+                confirmationDetails.innerHTML += `
+                    <div style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border-radius: 15px; color: white; text-align: center;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 1.2em;">📱 WhatsApp Confirmation</h3>
+                        <p style="margin: 0 0 15px 0; opacity: 0.9;">Send confirmation message directly to our WhatsApp</p>
+                        
+                        ${whatsappData.qr ? `
+                            <div style="background: white; padding: 15px; border-radius: 10px; margin: 15px 0; display: inline-block;">
+                                <img src="${whatsappData.qr}" alt="WhatsApp QR Code" style="width: 150px; height: 150px; border-radius: 8px;">
+                            </div>
+                        ` : ''}
+                        
+                        <div style="margin-top: 15px;">
+                            <a href="${whatsappData.link}" target="_blank" style="display: inline-block; background: rgba(255,255,255,0.2); color: white; padding: 12px 25px; text-decoration: none; border-radius: 25px; font-weight: bold; border: 2px solid rgba(255,255,255,0.3); transition: all 0.3s;">
+                                💬 Send WhatsApp Message
+                            </a>
+                        </div>
+                        
+                        <p style="margin: 15px 0 0 0; font-size: 0.9em; opacity: 0.8;">
+                            Scan QR code or click button to send confirmation via WhatsApp
+                        </p>
+                    </div>
+                `;
+            }
         }
     </script>
 </body>

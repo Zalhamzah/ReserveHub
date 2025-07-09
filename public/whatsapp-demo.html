@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp QR Code Demo - ReserveHub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .demo-section {
+            margin-bottom: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-left: 5px solid #25D366;
+        }
+
+        .demo-section h2 {
+            color: #128C7E;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .qr-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .qr-card {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .qr-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .qr-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        .qr-placeholder {
+            width: 200px;
+            height: 200px;
+            background: #f0f0f0;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+
+        .generated-qr {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 15px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .generated-qr img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(37, 211, 102, 0.4);
+        }
+
+        .link-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+            color: #666;
+            border: 1px solid #e9ecef;
+        }
+
+        .instructions {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .instructions h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .phone-info {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .phone-info strong {
+            color: #856404;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .qr-container {
+                flex-direction: column;
+            }
+            
+            .qr-card {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 WhatsApp QR Demo</h1>
+            <p>Generate QR codes for instant WhatsApp booking confirmations</p>
+        </div>
+
+        <div class="content">
+            <div class="phone-info">
+                <strong>📞 Your WhatsApp Number:</strong> +60142779902
+            </div>
+
+            <div class="demo-section">
+                <h2>🎯 Contact QR Code</h2>
+                <p>This QR code opens a direct WhatsApp chat with your business number.</p>
+                
+                <div class="qr-container">
+                    <div class="qr-card">
+                        <h3>Business Contact</h3>
+                        <div id="contactQR" class="qr-placeholder">
+                            Click "Generate" to create QR code
+                        </div>
+                        <button class="btn" onclick="generateContactQR()">Generate Contact QR</button>
+                        <div id="contactLink" class="link-display" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="demo-section">
+                <h2>📅 Booking Confirmation QR</h2>
+                <p>This shows how booking confirmation QR codes work (demo with sample data).</p>
+                
+                <div class="qr-container">
+                    <div class="qr-card">
+                        <h3>Sample Booking</h3>
+                        <div id="bookingQR" class="qr-placeholder">
+                            Click "Generate" to create QR code
+                        </div>
+                        <button class="btn" onclick="generateBookingQR()">Generate Booking QR</button>
+                        <div id="bookingLink" class="link-display" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="instructions">
+                <h3>📋 How to Use</h3>
+                <ol>
+                    <li><strong>Generate QR Codes:</strong> Click the buttons above to create QR codes</li>
+                    <li><strong>Scan with Phone:</strong> Use any QR code scanner or camera app</li>
+                    <li><strong>Opens WhatsApp:</strong> QR code will open WhatsApp with pre-filled message</li>
+                    <li><strong>Send Message:</strong> Customer can send the confirmation message directly to you</li>
+                    <li><strong>No Setup Required:</strong> Works with your personal WhatsApp number</li>
+                </ol>
+            </div>
+
+            <div class="demo-section">
+                <h2>🔧 Integration</h2>
+                <p>These QR codes are automatically generated when customers make bookings through your frontend:</p>
+                <ul style="margin-top: 15px; margin-left: 20px;">
+                    <li><strong>Booking Created:</strong> QR code included in booking response</li>
+                    <li><strong>Email Confirmation:</strong> QR code can be embedded in confirmation emails</li>
+                    <li><strong>Print Materials:</strong> QR codes can be printed on receipts or cards</li>
+                    <li><strong>Dashboard Display:</strong> Show QR codes in your merchant dashboard</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function generateContactQR() {
+            try {
+                const response = await fetch('/api/v1/whatsapp/contact/qr');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const qrContainer = document.getElementById('contactQR');
+                    qrContainer.innerHTML = `<img src="${data.data.qrCode}" alt="Contact QR Code">`;
+                    qrContainer.className = 'generated-qr';
+                    
+                    const linkContainer = document.getElementById('contactLink');
+                    linkContainer.textContent = `https://wa.me/${data.data.phoneNumber}`;
+                    linkContainer.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error generating contact QR:', error);
+                alert('Error generating QR code. Please make sure the server is running.');
+            }
+        }
+
+        async function generateBookingQR() {
+            // For demo purposes, we'll generate a QR with sample booking data
+            try {
+                // First, let's create a sample WhatsApp link manually for demo
+                const sampleMessage = encodeURIComponent(`🎉 *Booking Confirmed!*
+
+Hi John Doe! Your reservation at *Demo Restaurant* is confirmed.
+
+📅 *Date:* January 15th, 2025
+⏰ *Time:* 7:00 PM
+👥 *Party Size:* 4 people
+🔢 *Confirmation Code:* ABC123
+
+We're excited to serve you! Please arrive 5 minutes early.
+
+Need to make changes? Reply to this message or call us directly.`);
+                
+                const whatsappLink = `https://wa.me/60142779902?text=${sampleMessage}`;
+                
+                // Generate QR code for this link using external API
+                const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(whatsappLink)}`;
+                
+                const qrContainer = document.getElementById('bookingQR');
+                qrContainer.innerHTML = `<img src="${qrApiUrl}" alt="Booking QR Code">`;
+                qrContainer.className = 'generated-qr';
+                
+                const linkContainer = document.getElementById('bookingLink');
+                linkContainer.textContent = whatsappLink;
+                linkContainer.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error generating booking QR:', error);
+                alert('Error generating QR code. Please make sure the server is running.');
+            }
+        }
+
+        // Simple QR code generation using a public API for demo
+        function generateQRCode(text) {
+            const size = 200;
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}`;
+            return qrApiUrl;
+        }
+
+        // Alternative: Use canvas to show the QR as data URL
+        function generateBookingQRAlternative() {
+            const sampleMessage = `🎉 *Booking Confirmed!*
+
+Hi John Doe! Your reservation at *Demo Restaurant* is confirmed.
+
+📅 *Date:* January 15th, 2025
+⏰ *Time:* 7:00 PM
+👥 *Party Size:* 4 people
+🔢 *Confirmation Code:* ABC123
+
+We're excited to serve you! Please arrive 5 minutes early.
+
+Need to make changes? Reply to this message or call us directly.`;
+            
+            const whatsappLink = `https://wa.me/60142779902?text=${encodeURIComponent(sampleMessage)}`;
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(whatsappLink)}`;
+            
+            const qrContainer = document.getElementById('bookingQR');
+            qrContainer.innerHTML = `<img src="${qrApiUrl}" alt="Booking QR Code">`;
+            qrContainer.className = 'generated-qr';
+            
+            const linkContainer = document.getElementById('bookingLink');
+            linkContainer.textContent = whatsappLink;
+            linkContainer.style.display = 'block';
+        }
+    </script>
+</body>
+</html> 

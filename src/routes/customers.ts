@@ -1,13 +1,54 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { authMiddleware } from '@/middleware/auth';
 import { customerService } from '@/services/customerService';
 import { logger } from '@/utils/logger';
 import { ApiError } from '@/middleware/errorHandler';
+import { prisma } from '@/utils/database';
 
 const router = Router();
 
-// Apply auth middleware to all routes
+// Get customers by business ID (public endpoint for demo dashboard)
+router.get('/business/:businessId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { businessId } = req.params;
+
+    const customers = await prisma.customer.findMany({
+      where: { businessId },
+      include: {
+        bookings: {
+          orderBy: { bookingTime: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            bookingTime: true,
+            status: true
+          }
+        },
+        _count: {
+          select: {
+            bookings: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        customers,
+        total: customers.length
+      },
+      message: 'Customers retrieved successfully'
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Apply auth middleware to protected routes
 router.use(authMiddleware);
 
 // Validation middleware

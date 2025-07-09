@@ -9,6 +9,10 @@ import { realTimeAvailabilityService } from '@/services/realTimeAvailabilityServ
 import { websocketEvents } from '@/utils/websocket';
 import moment from 'moment-timezone';
 import { v4 as uuidv4 } from 'uuid';
+import { emailService } from '@/services/emailService';
+import { smsService } from '@/services/smsService';
+import { schedulerService } from '@/services/schedulerService';
+import { whatsappService } from '@/services/whatsappService';
 
 const router = Router();
 
@@ -22,6 +26,62 @@ const generateBookingNumber = (): string => {
 const generateConfirmationCode = (): string => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 };
+
+// Get bookings by business ID (public endpoint for demo dashboard)
+router.get('/business/:businessId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { businessId } = req.params;
+    const { limit, sort, status } = req.query;
+
+    // Build query conditions
+    const where: any = { businessId };
+    if (status) {
+      where.status = status as string;
+    }
+
+    // Parse limit
+    const limitValue = limit ? parseInt(limit as string, 10) : undefined;
+
+    // Parse sort
+    let orderBy: any = { createdAt: 'desc' };
+    if (sort) {
+      const sortStr = sort as string;
+      if (sortStr.includes(':')) {
+        const [field, direction] = sortStr.split(':');
+        orderBy = { [field]: direction };
+      }
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where,
+      take: limitValue,
+      orderBy,
+      include: {
+        customer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true
+          }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        bookings,
+        total: bookings.length
+      },
+      message: 'Bookings retrieved successfully'
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Public endpoint for customer reservations (no auth required)
 const publicBookingValidation = [
@@ -260,6 +320,92 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
     // Emit WebSocket event
     websocketEvents.bookingCreated(businessId, booking);
 
+    // Generate WhatsApp QR code and link for booking confirmation
+    let whatsappData = null;
+    try {
+      const bookingData = {
+        customerName: `${customer.firstName} ${customer.lastName}`,
+        businessName: business.name,
+        bookingDate: moment(booking.bookingDate).format('MMMM Do, YYYY'),
+        bookingTime: moment(booking.bookingTime).format('h:mm A'),
+        partySize: booking.partySize,
+        confirmationCode: booking.confirmationCode,
+        serviceType: undefined, // Will be set for salon bookings
+        staffName: undefined    // Will be set for salon bookings
+      };
+
+      const [whatsappLink, qrCode] = await Promise.all([
+        whatsappService.generateConfirmationLink(bookingData),
+        whatsappService.generateConfirmationQR(bookingData)
+      ]);
+
+      whatsappData = {
+        link: whatsappLink,
+        qrCode: qrCode,
+        phoneNumber: whatsappService.getPhoneNumber()
+      };
+
+      // Send WhatsApp confirmation message directly to customer
+      if (customer.phone) {
+        try {
+          const messageResult = await whatsappService.sendConfirmationMessage(bookingData, customer.phone);
+          if (messageResult.success) {
+            logger.info(`WhatsApp confirmation message sent to ${customer.firstName} ${customer.lastName} at ${customer.phone}`);
+            whatsappData.messageSent = true;
+            whatsappData.messageId = messageResult.messageId;
+          } else {
+            logger.warn(`Failed to send WhatsApp confirmation message to ${customer.phone}: ${messageResult.error}`);
+            whatsappData.messageSent = false;
+            whatsappData.messageError = messageResult.error;
+          }
+        } catch (error) {
+          logger.error('Error sending WhatsApp confirmation message:', error);
+          whatsappData.messageSent = false;
+          whatsappData.messageError = 'Failed to send confirmation message';
+        }
+      } else {
+        logger.warn(`No phone number available for customer ${customer.firstName} ${customer.lastName}, skipping WhatsApp confirmation`);
+        whatsappData.messageSent = false;
+        whatsappData.messageError = 'No phone number available';
+      }
+    } catch (error) {
+      logger.warn('Failed to generate WhatsApp QR code and link:', error);
+    }
+
+    // Schedule WhatsApp reminder for 1 hour before appointment
+    try {
+      // Update booking status to CONFIRMED first
+      await prisma.booking.update({
+        where: { id: booking.id },
+        data: { status: 'CONFIRMED' }
+      });
+
+      // Schedule the reminder with complete booking data
+      const bookingWithRelations = await prisma.booking.findUnique({
+        where: { id: booking.id },
+        include: {
+          customer: {
+            select: {
+              firstName: true,
+              lastName: true,
+              phone: true
+            }
+          },
+          business: {
+            select: {
+              name: true
+            }
+          }
+        }
+      });
+
+      if (bookingWithRelations) {
+        schedulerService.scheduleBookingReminder(bookingWithRelations);
+      }
+    } catch (error) {
+      logger.warn('Failed to schedule WhatsApp reminder:', error);
+    }
+
     logger.info(`Public booking created: ${booking.bookingNumber} for customer ${customer.firstName} ${customer.lastName}`);
 
     res.status(201).json({
@@ -280,7 +426,8 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
           status: booking.status,
           specialRequests: booking.specialRequests,
           createdAt: booking.createdAt
-        }
+        },
+        whatsapp: whatsappData
       }
     });
 
@@ -469,116 +616,312 @@ router.post('/', authMiddleware, requireRole('ADMIN', 'MANAGER', 'STAFF', 'HOST'
   }
 });
 
-// Get all bookings with filtering and pagination
-router.get('/', authMiddleware, bookingQueryValidation, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      throw new ValidationError('Validation failed', errors.array());
-    }
+// Admin endpoint: Get all bookings with pagination and filtering
+router.get('/', async (req, res, next) => {
+    try {
+        const { 
+            page = 1, 
+            limit = 10, 
+            status, 
+            businessId,
+            startDate, 
+            endDate,
+            sort = 'createdAt:desc'
+        } = req.query;
 
-    const {
-      date,
-      status,
-      locationId,
-      customerId,
-      page = 1,
-      limit = 20
-    } = req.query;
+        const skip = (Number(page) - 1) * Number(limit);
+        const [sortField, sortOrder] = (sort as string).split(':');
 
-    const skip = (Number(page) - 1) * Number(limit);
-
-    // Build where clause
-    const whereClause: any = {
-      businessId: req.user!.businessId
-    };
-
-    if (date) {
-      const startDate = moment(date as string).startOf('day').toDate();
-      const endDate = moment(date as string).endOf('day').toDate();
-      whereClause.bookingDate = {
-        gte: startDate,
-        lte: endDate
-      };
-    }
-
-    if (status) {
-      whereClause.status = status;
-    }
-
-    if (locationId) {
-      whereClause.locationId = locationId;
-    }
-
-    if (customerId) {
-      whereClause.customerId = customerId;
-    }
-
-    // Get bookings with pagination
-    const [bookings, totalCount] = await Promise.all([
-      prisma.booking.findMany({
-        where: whereClause,
-        include: {
-          customer: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phone: true
+        const where: any = {};
+        
+        if (businessId) {
+            where.businessId = businessId as string;
+        }
+        
+        if (status) {
+            where.status = status as string;
+        }
+        
+        if (startDate || endDate) {
+            where.bookingTime = {};
+            if (startDate) {
+                where.bookingTime.gte = new Date(startDate as string);
             }
-          },
-          table: {
-            select: {
-              id: true,
-              number: true,
-              capacity: true,
-              type: true
+            if (endDate) {
+                where.bookingTime.lte = new Date(endDate as string);
             }
-          },
-          location: {
-            select: {
-              id: true,
-              name: true,
-              address: true
+        }
+
+        const [bookings, total] = await Promise.all([
+            prisma.booking.findMany({
+                where,
+                skip,
+                take: Number(limit),
+                orderBy: {
+                    [sortField]: sortOrder === 'desc' ? 'desc' : 'asc'
+                },
+                include: {
+                    customer: true,
+                    business: {
+                        select: {
+                            name: true,
+                            type: true
+                        }
+                    },
+                    table: {
+                        select: {
+                            number: true,
+                            capacity: true
+                        }
+                    }
+                }
+            }),
+            prisma.booking.count({ where })
+        ]);
+
+        res.json({
+            success: true,
+            data: {
+                bookings,
+                pagination: {
+                    page: Number(page),
+                    limit: Number(limit),
+                    total,
+                    pages: Math.ceil(total / Number(limit))
+                }
             }
-          },
-          createdBy: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true
+        });
+
+    } catch (error) {
+        logger.error('Error fetching bookings:', error);
+        next(error);
+    }
+});
+
+// Admin endpoint: Update booking status
+router.patch('/:id/status', async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!['pending', 'confirmed', 'cancelled', 'completed', 'no_show'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status value'
+            });
+        }
+
+        const booking = await prisma.booking.update({
+            where: { id },
+            data: { 
+                status,
+                updatedAt: new Date()
+            },
+            include: {
+                customer: true,
+                business: true,
+                table: true
             }
-          }
-        },
-        orderBy: [
-          { bookingDate: 'desc' },
-          { bookingTime: 'desc' }
-        ],
-        skip,
-        take: Number(limit)
-      }),
-      prisma.booking.count({ where: whereClause })
-    ]);
+        });
 
-    const totalPages = Math.ceil(totalCount / Number(limit));
+        // Send notification to customer about status change
+        if (status === 'confirmed') {
+            await emailService.sendBookingConfirmation(booking);
+        } else if (status === 'cancelled') {
+            await emailService.sendBookingCancellation(booking);
+        }
 
-    res.json({
-      bookings,
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        totalCount,
-        totalPages,
-        hasNext: Number(page) < totalPages,
-        hasPrev: Number(page) > 1
-      }
-    });
+        logger.info(`Booking ${id} status updated to ${status}`);
 
-  } catch (error) {
-    next(error);
-  }
+        res.json({
+            success: true,
+            data: { booking },
+            message: `Booking ${status} successfully`
+        });
+
+    } catch (error) {
+        logger.error('Error updating booking status:', error);
+        next(error);
+    }
+});
+
+// Admin endpoint: Get booking statistics for dashboard
+router.get('/admin/stats', async (req, res, next) => {
+    try {
+        const { businessId, period = 'today' } = req.query;
+        
+        const now = new Date();
+        let startDate: Date;
+        let endDate: Date = now;
+
+        switch (period) {
+            case 'today':
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                break;
+            case 'week':
+                startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case 'month':
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                break;
+            case 'year':
+                startDate = new Date(now.getFullYear(), 0, 1);
+                break;
+            default:
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        }
+
+        const where: any = {
+            bookingTime: {
+                gte: startDate,
+                lte: endDate
+            }
+        };
+
+        if (businessId) {
+            where.businessId = businessId as string;
+        }
+
+        const [
+            totalBookings,
+            confirmedBookings,
+            pendingBookings,
+            cancelledBookings,
+            completedBookings,
+            revenueData
+        ] = await Promise.all([
+            prisma.booking.count({ where }),
+            prisma.booking.count({ where: { ...where, status: 'confirmed' } }),
+            prisma.booking.count({ where: { ...where, status: 'pending' } }),
+            prisma.booking.count({ where: { ...where, status: 'cancelled' } }),
+            prisma.booking.count({ where: { ...where, status: 'completed' } }),
+            prisma.booking.aggregate({
+                where: { ...where, status: { in: ['confirmed', 'completed'] } },
+                _sum: {
+                    totalAmount: true
+                }
+            })
+        ]);
+
+        // Get previous period for comparison
+        const previousStartDate = new Date(startDate.getTime() - (endDate.getTime() - startDate.getTime()));
+        const previousWhere = {
+            ...where,
+            bookingTime: {
+                gte: previousStartDate,
+                lt: startDate
+            }
+        };
+
+        const previousBookings = await prisma.booking.count({ where: previousWhere });
+        const bookingGrowth = previousBookings > 0 ? 
+            ((totalBookings - previousBookings) / previousBookings) * 100 : 0;
+
+        // Get hourly distribution for today
+        const hourlyData = await prisma.booking.groupBy({
+            by: ['bookingTime'],
+            where: {
+                ...where,
+                bookingTime: {
+                    gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+                    lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+                }
+            },
+            _count: true
+        });
+
+        const hourlyDistribution = Array.from({ length: 24 }, (_, hour) => {
+            const count = hourlyData.filter(data => 
+                new Date(data.bookingTime).getHours() === hour
+            ).length;
+            return { hour, count };
+        });
+
+        res.json({
+            success: true,
+            data: {
+                summary: {
+                    totalBookings,
+                    confirmedBookings,
+                    pendingBookings,
+                    cancelledBookings,
+                    completedBookings,
+                    totalRevenue: revenueData._sum.totalAmount || 0,
+                    bookingGrowth: Math.round(bookingGrowth * 100) / 100
+                },
+                charts: {
+                    hourlyDistribution,
+                    statusDistribution: [
+                        { status: 'confirmed', count: confirmedBookings },
+                        { status: 'pending', count: pendingBookings },
+                        { status: 'cancelled', count: cancelledBookings },
+                        { status: 'completed', count: completedBookings }
+                    ]
+                }
+            }
+        });
+
+    } catch (error) {
+        logger.error('Error fetching booking statistics:', error);
+        next(error);
+    }
+});
+
+// Admin endpoint: Update booking details
+router.put('/:id', async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const {
+            bookingDate,
+            bookingTime,
+            partySize,
+            specialRequests,
+            status,
+            customerEmail,
+            customerPhone
+        } = req.body;
+
+        // Update booking
+        const booking = await prisma.booking.update({
+            where: { id },
+            data: {
+                bookingDate: bookingDate ? new Date(bookingDate) : undefined,
+                bookingTime: bookingTime ? new Date(`${bookingDate}T${bookingTime}`) : undefined,
+                partySize: partySize ? Number(partySize) : undefined,
+                specialRequests,
+                status,
+                updatedAt: new Date()
+            },
+            include: {
+                customer: true,
+                business: true,
+                table: true
+            }
+        });
+
+        // Update customer contact info if provided
+        if (customerEmail || customerPhone) {
+            await prisma.customer.update({
+                where: { id: booking.customerId },
+                data: {
+                    email: customerEmail || undefined,
+                    phone: customerPhone || undefined
+                }
+            });
+        }
+
+        logger.info(`Booking ${id} updated by admin`);
+
+        res.json({
+            success: true,
+            data: { booking },
+            message: 'Booking updated successfully'
+        });
+
+    } catch (error) {
+        logger.error('Error updating booking:', error);
+        next(error);
+    }
 });
 
 // Get specific booking

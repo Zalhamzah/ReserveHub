@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp QR Code Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .qr-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #25D366;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .qr-code {
+            margin: 20px 0;
+        }
+        .qr-code img {
+            max-width: 300px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: white;
+        }
+        button {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        button:hover {
+            background: #1ea855;
+        }
+        .link-box {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 WhatsApp QR Code Test</h1>
+        <p><strong>Your WhatsApp:</strong> +60142779902</p>
+
+        <div class="qr-section">
+            <h2>Contact QR Code</h2>
+            <button onclick="generateContactQR()">Generate Contact QR</button>
+            <div id="contactStatus"></div>
+            <div id="contactQR" class="qr-code"></div>
+            <div id="contactLink" class="link-box" style="display: none;"></div>
+        </div>
+
+        <div class="qr-section">
+            <h2>Sample Booking QR Code</h2>
+            <button onclick="generateSampleBookingQR()">Generate Sample Booking QR</button>
+            <div id="bookingStatus"></div>
+            <div id="bookingQR" class="qr-code"></div>
+            <div id="bookingLink" class="link-box" style="display: none;"></div>
+        </div>
+
+        <div class="qr-section">
+            <h2>Manual QR Code (Using External API)</h2>
+            <button onclick="generateManualQR()">Generate Manual QR</button>
+            <div id="manualStatus"></div>
+            <div id="manualQR" class="qr-code"></div>
+            <div id="manualLink" class="link-box" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Function to show status messages
+        function showStatus(containerId, message, type = 'success') {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        // Generate contact QR code
+        async function generateContactQR() {
+            try {
+                showStatus('contactStatus', 'Generating contact QR code...', 'success');
+                
+                const response = await fetch('/api/v1/whatsapp/contact/qr');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('contactQR').innerHTML = 
+                        `<img src="${data.data.qrCode}" alt="Contact QR Code">`;
+                    
+                    const link = `https://wa.me/${data.data.phoneNumber}`;
+                    document.getElementById('contactLink').innerHTML = link;
+                    document.getElementById('contactLink').style.display = 'block';
+                    
+                    showStatus('contactStatus', 'Contact QR code generated successfully!', 'success');
+                } else {
+                    showStatus('contactStatus', 'Error: ' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error generating contact QR:', error);
+                showStatus('contactStatus', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        // Generate sample booking QR code
+        async function generateSampleBookingQR() {
+            try {
+                showStatus('bookingStatus', 'Generating sample booking QR code...', 'success');
+                
+                // Create a sample booking message
+                const sampleMessage = `🎉 *Booking Confirmed!*
+
+Hi John Doe! Your reservation at *Test Restaurant* is confirmed.
+
+📅 *Date:* January 15th, 2025
+⏰ *Time:* 7:00 PM
+👥 *Party Size:* 4 people
+🔢 *Confirmation Code:* TEST123
+
+We're excited to serve you! Please arrive 5 minutes early.
+
+Need to make changes? Reply to this message or call us directly.`;
+                
+                const whatsappLink = `https://wa.me/60142779902?text=${encodeURIComponent(sampleMessage)}`;
+                
+                // Use our backend service to generate QR code
+                const response = await fetch('/api/v1/whatsapp/contact/qr');
+                const contactData = await response.json();
+                
+                if (contactData.success) {
+                    // Create QR code using the QR code service in our backend
+                    // For now, let's use the external API approach
+                    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(whatsappLink)}`;
+                    
+                    document.getElementById('bookingQR').innerHTML = 
+                        `<img src="${qrApiUrl}" alt="Booking QR Code">`;
+                    
+                    document.getElementById('bookingLink').innerHTML = whatsappLink;
+                    document.getElementById('bookingLink').style.display = 'block';
+                    
+                    showStatus('bookingStatus', 'Sample booking QR code generated successfully!', 'success');
+                } else {
+                    showStatus('bookingStatus', 'Error generating QR code', 'error');
+                }
+            } catch (error) {
+                console.error('Error generating booking QR:', error);
+                showStatus('bookingStatus', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        // Generate manual QR code using external API
+        async function generateManualQR() {
+            try {
+                showStatus('manualStatus', 'Generating manual QR code...', 'success');
+                
+                const phoneNumber = '60142779902';
+                const message = 'Hello! I would like to make a reservation.';
+                const whatsappLink = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+                
+                const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(whatsappLink)}`;
+                
+                document.getElementById('manualQR').innerHTML = 
+                    `<img src="${qrApiUrl}" alt="Manual QR Code">`;
+                
+                document.getElementById('manualLink').innerHTML = whatsappLink;
+                document.getElementById('manualLink').style.display = 'block';
+                
+                showStatus('manualStatus', 'Manual QR code generated successfully!', 'success');
+            } catch (error) {
+                console.error('Error generating manual QR:', error);
+                showStatus('manualStatus', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        // Auto-generate contact QR on page load
+        window.onload = function() {
+            generateContactQR();
+        };
+    </script>
+</body>
+</html> 

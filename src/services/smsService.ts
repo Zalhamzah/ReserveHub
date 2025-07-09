@@ -8,6 +8,11 @@ export interface SMSData {
   message: string;
 }
 
+export interface WhatsAppData {
+  to: string;
+  message: string;
+}
+
 export interface BookingConfirmationSMSData {
   customerName: string;
   customerPhone: string;
@@ -18,6 +23,18 @@ export interface BookingConfirmationSMSData {
   confirmationCode: string;
 }
 
+export interface BookingConfirmationWhatsAppData {
+  customerName: string;
+  customerPhone: string;
+  businessName: string;
+  bookingDate: string;
+  bookingTime: string;
+  partySize: number;
+  confirmationCode: string;
+  serviceType?: string;
+  staffName?: string;
+}
+
 export interface BookingReminderSMSData {
   customerName: string;
   customerPhone: string;
@@ -26,6 +43,18 @@ export interface BookingReminderSMSData {
   bookingTime: string;
   confirmationCode: string;
   reminderType: 'day_before' | 'hour_before' | 'custom';
+}
+
+export interface BookingReminderWhatsAppData {
+  customerName: string;
+  customerPhone: string;
+  businessName: string;
+  bookingDate: string;
+  bookingTime: string;
+  confirmationCode: string;
+  reminderType: 'day_before' | 'hour_before' | 'custom';
+  serviceType?: string;
+  staffName?: string;
 }
 
 export interface BookingCancellationSMSData {
@@ -55,6 +84,7 @@ export interface TableReadySMSData {
 export class SMSService {
   private client: Twilio | null;
   private fromNumber: string;
+  private whatsappNumber: string;
   private isEnabled: boolean;
 
   constructor() {
@@ -68,15 +98,18 @@ export class SMSService {
           config.notifications.twilio.authToken
         );
         this.fromNumber = config.notifications.twilio.phoneNumber;
+        this.whatsappNumber = '+60142779902'; // Your WhatsApp Business number
       } catch (error) {
         logger.error('Failed to initialize Twilio client:', error);
         this.isEnabled = false;
         this.client = null;
         this.fromNumber = '';
+        this.whatsappNumber = '';
       }
     } else {
       this.client = null;
       this.fromNumber = '';
+      this.whatsappNumber = '';
       logger.warn('Twilio SMS service is not configured. SMS notifications will be disabled.');
     }
   }
@@ -124,6 +157,27 @@ export class SMSService {
       return true;
     } catch (error) {
       logger.error('Error sending SMS:', error);
+      return false;
+    }
+  }
+
+  async sendWhatsApp(data: WhatsAppData): Promise<boolean> {
+    if (!this.isEnabled || !this.client) {
+      logger.warn(`WhatsApp service not configured. Would have sent WhatsApp to ${data.to}: ${data.message}`);
+      return false;
+    }
+
+    try {
+      const result = await this.client.messages.create({
+        body: data.message,
+        from: `whatsapp:${this.whatsappNumber}`,
+        to: `whatsapp:${data.to}`
+      });
+
+      logger.info(`WhatsApp message sent successfully to ${data.to}`, { sid: result.sid });
+      return true;
+    } catch (error) {
+      logger.error('Error sending WhatsApp message:', error);
       return false;
     }
   }
@@ -198,6 +252,34 @@ export class SMSService {
     }
   }
 
+  async sendBookingConfirmationWhatsApp(data: BookingConfirmationWhatsAppData): Promise<boolean> {
+    try {
+      const message = this.getBookingConfirmationWhatsAppMessage(data);
+      
+      return await this.sendWhatsApp({
+        to: data.customerPhone,
+        message
+      });
+    } catch (error) {
+      logger.error('Error sending booking confirmation WhatsApp:', error);
+      return false;
+    }
+  }
+
+  async sendBookingReminderWhatsApp(data: BookingReminderWhatsAppData): Promise<boolean> {
+    try {
+      const message = this.getBookingReminderWhatsAppMessage(data);
+      
+      return await this.sendWhatsApp({
+        to: data.customerPhone,
+        message
+      });
+    } catch (error) {
+      logger.error('Error sending booking reminder WhatsApp:', error);
+      return false;
+    }
+  }
+
   private getBookingConfirmationMessage(data: BookingConfirmationSMSData): string {
     return `Hi ${data.customerName}! Your reservation at ${data.businessName} is confirmed for ${data.bookingDate} at ${data.bookingTime} for ${data.partySize} ${data.partySize === 1 ? 'person' : 'people'}. Confirmation code: ${data.confirmationCode}. See you soon!`;
   }
@@ -238,6 +320,55 @@ export class SMSService {
 
   private getTableReadyMessage(data: TableReadySMSData): string {
     return `Great news ${data.customerName}! Your table is ready at ${data.businessName}. Please come to the host stand with confirmation code: ${data.confirmationCode}. Thanks for your patience!`;
+  }
+
+  private getBookingConfirmationWhatsAppMessage(data: BookingConfirmationWhatsAppData): string {
+    let message = `🎉 *Booking Confirmed!*\n\n`;
+    message += `Hi ${data.customerName}! Your reservation at *${data.businessName}* is confirmed.\n\n`;
+    message += `📅 *Date:* ${data.bookingDate}\n`;
+    message += `⏰ *Time:* ${data.bookingTime}\n`;
+    message += `👥 *Party Size:* ${data.partySize} ${data.partySize === 1 ? 'person' : 'people'}\n`;
+    
+    if (data.serviceType) {
+      message += `💄 *Service:* ${data.serviceType}\n`;
+    }
+    
+    if (data.staffName) {
+      message += `👨‍💼 *Staff:* ${data.staffName}\n`;
+    }
+    
+    message += `🔢 *Confirmation Code:* ${data.confirmationCode}\n\n`;
+    message += `We're excited to serve you! Please arrive 5 minutes early.\n\n`;
+    message += `Need to make changes? Reply to this message or call us directly.`;
+    
+    return message;
+  }
+
+  private getBookingReminderWhatsAppMessage(data: BookingReminderWhatsAppData): string {
+    const reminderText = {
+      day_before: 'tomorrow',
+      hour_before: 'in 1 hour',
+      custom: 'soon'
+    };
+
+    let message = `⏰ *Booking Reminder*\n\n`;
+    message += `Hi ${data.customerName}! This is a friendly reminder that your reservation at *${data.businessName}* is ${reminderText[data.reminderType]}.\n\n`;
+    message += `📅 *Date:* ${data.bookingDate}\n`;
+    message += `⏰ *Time:* ${data.bookingTime}\n`;
+    
+    if (data.serviceType) {
+      message += `💄 *Service:* ${data.serviceType}\n`;
+    }
+    
+    if (data.staffName) {
+      message += `👨‍💼 *Staff:* ${data.staffName}\n`;
+    }
+    
+    message += `🔢 *Confirmation Code:* ${data.confirmationCode}\n\n`;
+    message += `Please confirm your attendance by replying "YES" or let us know if you need to reschedule.\n\n`;
+    message += `We look forward to seeing you!`;
+    
+    return message;
   }
 
   formatPhoneNumber(phone: string): string {

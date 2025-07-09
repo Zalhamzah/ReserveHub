@@ -47,6 +47,10 @@ interface Config {
       authToken: string;
       phoneNumber: string;
     };
+    whatsapp: {
+      businessNumber: string;
+      businessName: string;
+    };
     email: {
       host: string;
       port: number;
@@ -140,6 +144,10 @@ const config: Config = {
       accountSid: process.env.TWILIO_ACCOUNT_SID || '',
       authToken: process.env.TWILIO_AUTH_TOKEN || '',
       phoneNumber: process.env.TWILIO_PHONE_NUMBER || ''
+    },
+    whatsapp: {
+      businessNumber: process.env.WHATSAPP_BUSINESS_NUMBER || '60142779902',
+      businessName: process.env.BUSINESS_NAME || 'ReserveHub Restaurant'
     },
     email: {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',

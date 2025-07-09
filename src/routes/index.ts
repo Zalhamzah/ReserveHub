@@ -1,31 +1,49 @@
 import { Router } from 'express';
-import { authRoutes } from '@/routes/auth';
-import { bookingRoutes } from '@/routes/bookings';
-import { customerRoutes } from '@/routes/customers';
-import { businessRoutes } from '@/routes/business';
-import { tableRoutes } from '@/routes/tables';
-import { waitlistRoutes } from '@/routes/waitlist';
-import { paymentRoutes } from '@/routes/payments';
-import { notificationRoutes } from '@/routes/notifications';
-import { analyticsRoutes } from '@/routes/analytics';
-import { healthRoutes } from '@/routes/health';
+import { authRoutes } from './auth';
+import { businessRoutes } from './business';
+import { customerRoutes } from './customers';
+import { tableRoutes } from './tables';
+import { bookingRoutes } from './bookings';
+import { waitlistRoutes } from './waitlist';
+import { notificationRoutes } from './notifications';
+import { paymentRoutes } from './payments';
+import { analyticsRoutes } from './analytics';
+import { healthRoutes } from './health';
+import { adminRoutes } from './admin';
+import whatsappRoutes from './whatsapp';
 
 const router = Router();
 
-// Health check routes (no auth required)
+// Health check - should be first
 router.use('/health', healthRoutes);
 
-// Authentication routes (no auth required)
+// Authentication routes
 router.use('/auth', authRoutes);
 
-// Protected routes (auth required)
-router.use('/bookings', bookingRoutes);
-router.use('/customers', customerRoutes);
+// Business management routes
 router.use('/business', businessRoutes);
+router.use('/customers', customerRoutes);
 router.use('/tables', tableRoutes);
+router.use('/bookings', bookingRoutes);
 router.use('/waitlist', waitlistRoutes);
-router.use('/payments', paymentRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/payments', paymentRoutes);
 router.use('/analytics', analyticsRoutes);
+
+// WhatsApp routes
+router.use('/whatsapp', whatsappRoutes);
+
+// Admin routes
+router.use('/admin', adminRoutes);
+
+// Merchant Dashboard Route
+router.get('/dashboard', (req, res) => {
+    res.sendFile('dashboard.html', { root: 'public' });
+});
+
+// Admin Dashboard Route (alias)
+router.get('/admin', (req, res) => {
+    res.sendFile('dashboard.html', { root: 'public' });
+});
 
 export { router as routes }; 
