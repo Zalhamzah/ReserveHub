@@ -3132,11 +3132,18 @@
         }
 
         function validatePhoneNumber() {
-            const phoneInput = elements.phone;
-            const countryCode = elements.countryCode.value;
+            const phoneInput = document.getElementById('phone');
+            const countryCode = document.getElementById('country-code');
+            const phoneValidation = document.getElementById('phone-validation');
+            const phoneFullDisplay = document.getElementById('phone-full-display');
+            
+            if (!phoneInput || !countryCode || !phoneValidation || !phoneFullDisplay) {
+                console.log('Phone validation elements not found');
+                return;
+            }
+            
             const phoneNumber = phoneInput.value.trim();
-            const phoneValidation = elements.phoneValidation;
-            const phoneFullDisplay = elements.phoneFullDisplay;
+            const selectedCountryCode = countryCode.value;
             
             // Clear previous validation
             phoneValidation.textContent = '';
@@ -3148,27 +3155,35 @@
                 return;
             }
             
-            // Basic phone number validation
+            // Basic phone number validation - remove leading zeros if present
+            const cleanNumber = phoneNumber.replace(/^0+/, '');
             const phoneRegex = /^[0-9]{7,15}$/;
-            const isValid = phoneRegex.test(phoneNumber);
+            const isValid = phoneRegex.test(cleanNumber);
             
             if (isValid) {
                 phoneValidation.textContent = '✓ Valid phone number';
                 phoneValidation.classList.add('show', 'success');
-                phoneFullDisplay.textContent = `${countryCode}${phoneNumber}`;
+                phoneFullDisplay.textContent = `${selectedCountryCode}${cleanNumber}`;
                 phoneFullDisplay.classList.remove('empty');
+                phoneInput.value = cleanNumber; // Update the input to clean format
             } else {
                 phoneValidation.textContent = '✗ Please enter a valid phone number (7-15 digits)';
                 phoneValidation.classList.add('show');
-                phoneFullDisplay.textContent = phoneNumber ? `${countryCode}${phoneNumber}` : '-';
+                phoneFullDisplay.textContent = phoneNumber ? `${selectedCountryCode}${phoneNumber}` : '-';
                 phoneFullDisplay.classList.remove('empty');
             }
         }
 
         function getFullPhoneNumber() {
-            const countryCode = elements.countryCode.value;
-            const phoneNumber = elements.phone.value.trim();
-            return phoneNumber ? `${countryCode}${phoneNumber}` : '';
+            const countryCode = document.getElementById('country-code');
+            const phoneInput = document.getElementById('phone');
+            
+            if (!countryCode || !phoneInput) {
+                return '';
+            }
+            
+            const phoneNumber = phoneInput.value.trim();
+            return phoneNumber ? `${countryCode.value}${phoneNumber}` : '';
         }
 
         function loadTimeSlots() {
