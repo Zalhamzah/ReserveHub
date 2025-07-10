@@ -148,6 +148,7 @@ model Booking {
   specialRequests   String?
   notes             String?
   source            BookingSource       @default(DIRECT)
+  metadata          Json?               // For storing additional data like pet information
   createdById       String
   createdBy         User                @relation("BookingCreatedBy", fields: [createdById], references: [id])
   assignedToId      String?
@@ -388,6 +389,7 @@ enum BusinessType {
   FITNESS
   HEALTHCARE
   PROFESSIONAL_SERVICES
+  PET_SHOP
   OTHER
 }
 

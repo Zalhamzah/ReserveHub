@@ -91,10 +91,20 @@ const publicBookingValidation = [
   body('phone').isString().matches(/^\+?[\d\s\-\(\)]+$/).withMessage('Valid phone number is required'),
   body('businessId').isString().notEmpty().withMessage('Business ID is required'),
   body('locationId').optional().isString().withMessage('Location ID must be a string'),
+  body('serviceId').optional().isString().withMessage('Service ID must be a string'),
   body('bookingDate').isISO8601().withMessage('Valid booking date is required'),
   body('bookingTime').matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage('Valid booking time (HH:MM) is required'),
   body('partySize').isInt({ min: 1, max: 20 }).withMessage('Party size must be between 1 and 20'),
-  body('specialRequests').optional().isString().withMessage('Special requests must be a string')
+  body('specialRequests').optional().isString().withMessage('Special requests must be a string'),
+  // Pet-specific fields
+  body('petName').optional().isString().isLength({ min: 1, max: 50 }).withMessage('Pet name must be 1-50 characters'),
+  body('petType').optional().isString().isLength({ min: 1, max: 30 }).withMessage('Pet type must be 1-30 characters'),
+  body('petBreed').optional().isString().isLength({ min: 1, max: 50 }).withMessage('Pet breed must be 1-50 characters'),
+  body('petAge').optional().isString().isLength({ min: 1, max: 20 }).withMessage('Pet age must be 1-20 characters'),
+  body('petWeight').optional().isString().isLength({ min: 1, max: 20 }).withMessage('Pet weight must be 1-20 characters'),
+  body('petSpecialNeeds').optional().isString().isLength({ max: 500 }).withMessage('Pet special needs must be less than 500 characters'),
+  body('vaccinationUpToDate').optional().isBoolean().withMessage('Vaccination status must be true or false'),
+  body('lastVetVisit').optional().isISO8601().withMessage('Last vet visit must be a valid date')
 ];
 
 // Public endpoint - Get available time slots for a date
@@ -217,10 +227,20 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
       phone,
       businessId,
       locationId,
+      serviceId,
       bookingDate,
       bookingTime,
       partySize,
-      specialRequests
+      specialRequests,
+      // Pet-specific fields
+      petName,
+      petType,
+      petBreed,
+      petAge,
+      petWeight,
+      petSpecialNeeds,
+      vaccinationUpToDate,
+      lastVetVisit
     } = req.body;
 
     // Verify business exists and is active
@@ -391,6 +411,26 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
       }
     }
 
+    // Verify service exists and belongs to business (if provided)
+    let service = null;
+    let serviceDuration = 90; // Default duration
+    if (serviceId) {
+      service = await prisma.service.findFirst({
+        where: {
+          id: serviceId,
+          businessId,
+          isActive: true
+        }
+      });
+
+      if (!service) {
+        throw new NotFoundError('Service not found or inactive');
+      }
+
+      // Use service duration if available
+      serviceDuration = service.duration || 90;
+    }
+
     // Get a system user for createdBy (use first admin/manager user)
     const systemUser = await prisma.user.findFirst({
       where: {
@@ -413,13 +453,25 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
       locationId,
       bookingDateTime,
       partySize,
-      90, // Default 90 minutes duration
+      serviceDuration, // Use service duration instead of default
       customer.id
     );
 
     if (!reservationResult.success) {
       throw new ConflictError('Time slot not available');
     }
+
+    // Prepare pet information for metadata
+    const petInfo = petName ? {
+      petName,
+      petType,
+      petBreed,
+      petAge,
+      petWeight,
+      petSpecialNeeds,
+      vaccinationUpToDate,
+      lastVetVisit: lastVetVisit ? new Date(lastVetVisit) : undefined
+    } : undefined;
 
     // Create booking
     const booking = await prisma.booking.create({
@@ -428,16 +480,18 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
         customerId: customer.id,
         businessId,
         locationId,
+        serviceId: serviceId || undefined,
         tableId: reservationResult.tableId,
         bookingDate: moment(bookingDate).toDate(),
         bookingTime: moment(bookingDateTime).toDate(),
-        duration: 90,
+        duration: serviceDuration,
         partySize,
         status: 'PENDING',
         confirmationCode: generateConfirmationCode(),
         specialRequests,
         source: 'ONLINE',
-        createdById: systemUser.id
+        createdById: systemUser.id,
+        metadata: petInfo ? { petInfo } : undefined
       },
       include: {
         customer: {
@@ -449,6 +503,16 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
             phone: true
           }
         },
+        service: service ? {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            duration: true,
+            price: true,
+            category: true
+          }
+        } : undefined,
         table: {
           select: {
             id: true,
@@ -472,7 +536,7 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
       locationId,
       bookingDateTime,
       partySize,
-      90
+      serviceDuration
     );
 
     // Emit WebSocket event

@@ -10,6 +10,7 @@ import { paymentRoutes } from './payments';
 import { analyticsRoutes } from './analytics';
 import { healthRoutes } from './health';
 import { adminRoutes } from './admin';
+import serviceRoutes from './services';
 import whatsappRoutes from './whatsapp';
 
 const router = Router();
@@ -25,6 +26,7 @@ router.use('/business', businessRoutes);
 router.use('/customers', customerRoutes);
 router.use('/tables', tableRoutes);
 router.use('/bookings', bookingRoutes);
+router.use('/services', serviceRoutes);
 router.use('/waitlist', waitlistRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/payments', paymentRoutes);
