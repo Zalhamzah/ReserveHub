@@ -34,7 +34,7 @@
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 18+ 
 - PostgreSQL 14+
 - Redis 6+
 

@@ -348,7 +348,7 @@ export class CustomerService {
         whereClause.totalSpent = { gte: filters.minTotalSpent };
       }
       if (filters.maxTotalSpent !== undefined) {
-        whereClause.totalSpent = whereClause.totalSpent 
+        whereClause.totalSpent = whereClause.totalSpent && typeof whereClause.totalSpent === 'object'
           ? { ...whereClause.totalSpent, lte: filters.maxTotalSpent }
           : { lte: filters.maxTotalSpent };
       }
@@ -356,7 +356,7 @@ export class CustomerService {
         whereClause.totalVisits = { gte: filters.minTotalVisits };
       }
       if (filters.maxTotalVisits !== undefined) {
-        whereClause.totalVisits = whereClause.totalVisits
+        whereClause.totalVisits = whereClause.totalVisits && typeof whereClause.totalVisits === 'object'
           ? { ...whereClause.totalVisits, lte: filters.maxTotalVisits }
           : { lte: filters.maxTotalVisits };
       }
@@ -364,7 +364,7 @@ export class CustomerService {
         whereClause.lastVisit = { gte: filters.lastVisitAfter };
       }
       if (filters.lastVisitBefore) {
-        whereClause.lastVisit = whereClause.lastVisit
+        whereClause.lastVisit = whereClause.lastVisit && typeof whereClause.lastVisit === 'object'
           ? { ...whereClause.lastVisit, lte: filters.lastVisitBefore }
           : { lte: filters.lastVisitBefore };
       }

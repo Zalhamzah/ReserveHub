@@ -50,6 +50,13 @@ interface Config {
     whatsapp: {
       businessNumber: string;
       businessName: string;
+      // WhatsApp Business API Configuration
+      accessToken: string;
+      phoneNumberId: string;
+      businessAccountId: string;
+      webhookVerifyToken: string;
+      appSecret: string;
+      apiUrl: string;
     };
     email: {
       host: string;
@@ -147,7 +154,14 @@ const config: Config = {
     },
     whatsapp: {
       businessNumber: process.env.WHATSAPP_BUSINESS_NUMBER || '60142779902',
-      businessName: process.env.BUSINESS_NAME || 'ReserveHub Restaurant'
+      businessName: process.env.BUSINESS_NAME || 'ReserveHub Restaurant',
+      // WhatsApp Business API Configuration
+      accessToken: process.env.WHATSAPP_ACCESS_TOKEN || '',
+      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID || '',
+      webhookVerifyToken: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || '',
+      appSecret: process.env.WHATSAPP_APP_SECRET || '',
+      apiUrl: process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v18.0'
     },
     email: {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',

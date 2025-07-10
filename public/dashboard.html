@@ -1013,11 +1013,32 @@
     </div>
 
     <script>
-        // Configuration
+        // Configuration - Environment-aware API base URL
         const CONFIG = {
             BUSINESS_ID: 'cmcvm0c700001183pd3xmxx4e',
-            API_BASE_URL: '/api/v1'
+            API_BASE_URL: getApiBaseUrl()
         };
+
+        function getApiBaseUrl() {
+            const hostname = window.location.hostname;
+            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+            
+            if (isLocalhost) {
+                // Use localhost API
+                return '/api/v1';
+            } else {
+                // Use deployed API (relative URL works for same domain)
+                return '/api/v1';
+            }
+        }
+
+        // Debug: Log the current configuration
+        console.log('🔧 ReserveHub Dashboard Configuration:', {
+            hostname: window.location.hostname,
+            apiBaseUrl: CONFIG.API_BASE_URL,
+            businessId: CONFIG.BUSINESS_ID,
+            environment: window.location.hostname === 'localhost' ? 'development' : 'production'
+        });
 
         // State management
         let currentPage = 'dashboard';

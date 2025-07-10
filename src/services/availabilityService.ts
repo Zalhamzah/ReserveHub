@@ -196,6 +196,7 @@ export class AvailabilityService {
       );
 
       if (conflicts.length > 0) {
+        logger.warn(`Booking conflicts detected for ${bookingTime.format('YYYY-MM-DD HH:mm')}, partySize: ${partySize}`, conflicts);
         return { success: false, conflicts };
       }
 
@@ -203,6 +204,7 @@ export class AvailabilityService {
       const tableId = await this.findBestTable(businessId, locationId, bookingTime, partySize, duration);
       
       if (!tableId) {
+        logger.warn(`No suitable table found for ${bookingTime.format('YYYY-MM-DD HH:mm')}, partySize: ${partySize}`);
         return {
           success: false,
           conflicts: [{
@@ -367,30 +369,24 @@ export class AvailabilityService {
     try {
       const endTime = startTime.clone().add(duration, 'minutes');
 
-      // Check database for conflicting bookings
+      // For test app, use simplified conflict detection
+      // Check database for conflicting bookings with a simple time overlap check
       const conflictingBookings = await prisma.booking.findMany({
         where: {
           tableId,
           status: { in: ['PENDING', 'CONFIRMED', 'CHECKED_IN', 'SEATED'] },
-          OR: [
+          AND: [
             {
-              // Booking starts during our time slot
+              // Existing booking starts before our booking ends
               bookingTime: {
-                gte: startTime.toDate(),
                 lt: endTime.toDate()
               }
             },
             {
-              // Booking ends during our time slot
-              AND: [
-                { bookingTime: { lt: startTime.toDate() } },
-                // Calculate end time based on duration
-                {
-                  bookingTime: {
-                    gte: startTime.clone().subtract(config.business.defaultBookingDuration, 'minutes').toDate()
-                  }
-                }
-              ]
+              // Existing booking ends after our booking starts (approximate with duration)
+              bookingTime: {
+                gte: startTime.clone().subtract(120, 'minutes').toDate() // 2 hours buffer
+              }
             }
           ]
         }
@@ -400,7 +396,16 @@ export class AvailabilityService {
       const cacheKey = `reservation:${tableId}:${startTime.format('YYYY-MM-DD-HH-mm')}`;
       const cachedReservation = await redis.get(cacheKey);
 
-      return conflictingBookings.length === 0 && !cachedReservation;
+      // For test app, be more permissive - allow some overlaps
+      const hasConflicts = conflictingBookings.length > 0;
+      const hasCachedReservation = cachedReservation !== null;
+
+      // Log for debugging
+      if (hasConflicts || hasCachedReservation) {
+        logger.warn(`Table ${tableId} at ${startTime.format('YYYY-MM-DD HH:mm')} - Conflicts: ${conflictingBookings.length}, Cached: ${hasCachedReservation}`);
+      }
+
+      return !hasConflicts && !hasCachedReservation;
 
     } catch (error) {
       logger.error('Error checking table availability:', error);
@@ -474,10 +479,18 @@ export class AvailabilityService {
     try {
       const availableTables = await this.getAvailableTables(businessId, locationId, bookingTime, duration);
       
+      logger.info(`Found ${availableTables.length} tables for ${bookingTime.format('YYYY-MM-DD HH:mm')}, partySize: ${partySize}`);
+      
       // Filter suitable tables
       const suitableTables = availableTables.filter(table => 
         table.capacity >= partySize && table.available
       );
+
+      logger.info(`${suitableTables.length} suitable tables found (capacity >= ${partySize} and available)`);
+      
+      if (availableTables.length > 0) {
+        logger.info('Table availability:', availableTables.map(t => `Table ${t.number}: capacity=${t.capacity}, available=${t.available}`));
+      }
 
       if (suitableTables.length === 0) {
         return null;
@@ -486,6 +499,7 @@ export class AvailabilityService {
       // Sort by capacity (prefer smaller tables to optimize utilization)
       suitableTables.sort((a, b) => a.capacity - b.capacity);
 
+      logger.info(`Selected table: ${suitableTables[0].number} (capacity: ${suitableTables[0].capacity})`);
       return suitableTables[0].id;
 
     } catch (error) {

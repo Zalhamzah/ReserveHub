@@ -133,20 +133,21 @@ export class SchedulerService {
       const reminderData = {
         customerName: `${currentBooking.customer.firstName} ${currentBooking.customer.lastName}`,
         businessName: currentBooking.business.name,
-        bookingDate: moment(currentBooking.bookingDate).format('MMMM Do, YYYY'),
-        bookingTime: moment(currentBooking.bookingTime).format('h:mm A'),
+        bookingDate: currentBooking.bookingDate.toLocaleDateString(),
+        bookingTime: currentBooking.bookingTime.toLocaleTimeString(),
+        partySize: currentBooking.partySize,
         confirmationCode: currentBooking.confirmationCode,
         reminderType: 'hour_before' as const,
-        serviceType: undefined, // Will be set for salon bookings
-        staffName: undefined    // Will be set for salon bookings
+        serviceType: null,
+        staffName: null
       };
 
-      const messageResult = await whatsappService.sendReminderMessage(reminderData, currentBooking.customer.phone);
+      const messageResult = await whatsappService.sendBookingReminder(reminderData, currentBooking.customer.phone);
       
       if (messageResult.success) {
-        logger.info(`WhatsApp reminder sent successfully for booking ${currentBooking.bookingNumber} to ${currentBooking.customer.phone}`);
+        logger.info(`Reminder sent for booking ${currentBooking.bookingNumber}`);
       } else {
-        logger.warn(`Failed to send WhatsApp reminder for booking ${currentBooking.bookingNumber}: ${messageResult.error}`);
+        logger.error(`Failed to send reminder for booking ${currentBooking.bookingNumber}`);
       }
 
     } catch (error) {

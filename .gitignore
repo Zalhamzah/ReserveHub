@@ -65,3 +65,17 @@ coverage/
 # Backup files
 *.backup
 *.bak
+
+# Vercel
+.vercel
+.vercel/*
+.next/
+out/
+
+# Temporary scripts (don't commit these)
+temp_*.py
+temp_*.js
+test-*.js
+
+# Local Netlify folder
+.netlify

@@ -17,6 +17,20 @@ async function healthCheck(): Promise<boolean> {
   }
 }
 
+// Database connection check for API endpoints
+export const checkDatabaseConnection = async (): Promise<{ success: boolean; error?: string }> => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return { success: true };
+  } catch (error) {
+    logger.error('Database connection check failed:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Database connection failed' 
+    };
+  }
+};
+
 // Check if error is retryable
 function isRetryableError(error: any): boolean {
   const retryableErrors = [

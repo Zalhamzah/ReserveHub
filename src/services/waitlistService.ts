@@ -216,13 +216,17 @@ export class WaitlistService {
         whereClause.partySize = { gte: filters.minPartySize };
       }
              if (filters.maxPartySize) {
-         whereClause.partySize = { ...(whereClause.partySize || {}), lte: filters.maxPartySize };
+         whereClause.partySize = whereClause.partySize && typeof whereClause.partySize === 'object' 
+           ? { ...whereClause.partySize, lte: filters.maxPartySize }
+           : { lte: filters.maxPartySize };
        }
        if (filters.dateFrom) {
          whereClause.joinedAt = { gte: filters.dateFrom };
        }
        if (filters.dateTo) {
-         whereClause.joinedAt = { ...(whereClause.joinedAt || {}), lte: filters.dateTo };
+         whereClause.joinedAt = whereClause.joinedAt && typeof whereClause.joinedAt === 'object'
+           ? { ...whereClause.joinedAt, lte: filters.dateTo }
+           : { lte: filters.dateTo };
        }
 
       const [entries, total] = await Promise.all([

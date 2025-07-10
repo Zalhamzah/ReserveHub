@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { body, validationResult, param, query } from 'express-validator';
-import { prisma } from '@/utils/database';
+import { prisma, checkDatabaseConnection } from '@/utils/database';
 import { logger } from '@/utils/logger';
 import { authMiddleware, requireRole, requireBusinessAccess } from '@/middleware/auth';
 import { ValidationError, NotFoundError, ConflictError } from '@/middleware/errorHandler';
@@ -112,25 +112,61 @@ router.get('/public/availability', [
 
     const { businessId, date, partySize, locationId } = req.query;
 
+    // Check database connection first
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (dbError) {
+      logger.error('Database connection error in availability endpoint:', dbError);
+      return res.status(503).json({
+        success: false,
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+    }
+
     // Verify business exists and is active
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId as string,
-        isActive: true
-      }
-    });
+    let business;
+    try {
+      business = await prisma.business.findFirst({
+        where: {
+          id: businessId as string,
+          isActive: true
+        }
+      });
+    } catch (dbError) {
+      logger.error('Database error when finding business:', dbError);
+      return res.status(503).json({
+        success: false,
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+        error: 'DATABASE_QUERY_ERROR'
+      });
+    }
 
     if (!business) {
-      throw new NotFoundError('Business not found');
+      return res.status(404).json({
+        success: false,
+        message: 'Business not found or inactive',
+        error: 'BUSINESS_NOT_FOUND'
+      });
     }
 
     // Get available time slots for the date
-    const availableSlots = await availabilityService.getAvailableSlots({
-      businessId: businessId as string,
-      locationId: locationId as string,
-      date: date as string,
-      partySize: parseInt(partySize as string)
-    });
+    let availableSlots;
+    try {
+      availableSlots = await availabilityService.getAvailableSlots({
+        businessId: businessId as string,
+        locationId: locationId as string,
+        date: date as string,
+        partySize: parseInt(partySize as string)
+      });
+    } catch (availabilityError) {
+      logger.error('Error getting available slots:', availabilityError);
+      return res.status(500).json({
+        success: false,
+        message: 'Unable to retrieve available time slots. Please try again.',
+        error: 'AVAILABILITY_SERVICE_ERROR'
+      });
+    }
 
     res.json({
       success: true,
@@ -147,7 +183,12 @@ router.get('/public/availability', [
     });
 
   } catch (error) {
-    next(error);
+    logger.error('Unexpected error in availability endpoint:', error);
+    res.status(500).json({
+      success: false,
+      message: 'An unexpected error occurred. Please try again.',
+      error: 'INTERNAL_SERVER_ERROR'
+    });
   }
 });
 
@@ -157,6 +198,16 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       throw new ValidationError('Validation failed', errors.array());
+    }
+
+    // Check database connection first
+    const dbCheck = await checkDatabaseConnection();
+    if (!dbCheck.success) {
+      return res.status(503).json({
+        success: false,
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
     }
 
     const {
@@ -173,15 +224,29 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
     } = req.body;
 
     // Verify business exists and is active
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        isActive: true
-      }
-    });
+    let business;
+    try {
+      business = await prisma.business.findFirst({
+        where: {
+          id: businessId,
+          isActive: true
+        }
+      });
+    } catch (dbError) {
+      logger.error('Database error when finding business:', dbError);
+      return res.status(503).json({
+        success: false,
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+        error: 'DATABASE_QUERY_ERROR'
+      });
+    }
 
     if (!business) {
-      throw new NotFoundError('Business not found');
+      return res.status(404).json({
+        success: false,
+        message: 'Business not found or inactive',
+        error: 'BUSINESS_NOT_FOUND'
+      });
     }
 
     // Create or find customer
@@ -266,33 +331,36 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
         const isSimilarPerson = existingPhoneCustomer.firstName.toLowerCase() === firstName.toLowerCase();
         
         if (isSimilarPerson) {
-          // Likely the same person with different email addresses, merge the records
-          logger.info(`Merging customer records - ${customer.email} and ${existingPhoneCustomer.email} appear to be the same person`);
-          
-          // Update the found email customer with the phone number
-          customer = await prisma.customer.update({
-            where: { id: customer.id },
-            data: {
-              firstName,
-              lastName: lastName || customer.lastName,
-              phone,
-              isActive: true
-            }
-          });
+          // Likely the same person with different email addresses, use the existing customer
+          logger.info(`Using existing customer ${existingPhoneCustomer.id} instead of merging (same person detected)`);
+          customer = existingPhoneCustomer;
         } else {
           // Different people sharing a phone number (family, etc.)
           logger.warn(`Phone number ${phone} shared between ${customer.firstName} ${customer.lastName} and ${existingPhoneCustomer.firstName} ${existingPhoneCustomer.lastName}`);
           
-          // Update customer with phone number anyway
-          customer = await prisma.customer.update({
-            where: { id: customer.id },
-            data: {
-              firstName,
-              lastName: lastName || customer.lastName,
-              phone,
-              isActive: true
-            }
-          });
+          // For test app, allow duplicate phone numbers - update without phone
+          try {
+            customer = await prisma.customer.update({
+              where: { id: customer.id },
+              data: {
+                firstName,
+                lastName: lastName || customer.lastName,
+                phone,
+                isActive: true
+              }
+            });
+          } catch (error) {
+            // If unique constraint fails, update without phone number
+            logger.warn(`Phone number constraint failed, updating customer without phone number`);
+            customer = await prisma.customer.update({
+              where: { id: customer.id },
+              data: {
+                firstName,
+                lastName: lastName || customer.lastName,
+                isActive: true
+              }
+            });
+          }
         }
       } else {
         // No phone number conflict, update customer normally
@@ -424,29 +492,45 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
         staffName: undefined    // Will be set for salon bookings
       };
 
-      const [whatsappLink, qrCode] = await Promise.all([
-        whatsappService.generateConfirmationLink(bookingData),
-        whatsappService.generateConfirmationQR(bookingData)
-      ]);
+      // Generate WhatsApp link and QR code
+      const confirmationMessage = `🎉 *Booking Confirmed!*
+
+Hi ${bookingData.customerName}! Your reservation at *${bookingData.businessName}* is confirmed.
+
+📅 *Date:* ${bookingData.bookingDate}
+🕐 *Time:* ${bookingData.bookingTime}
+👥 *Party Size:* ${bookingData.partySize} ${bookingData.partySize === 1 ? 'person' : 'people'}
+🎫 *Confirmation Code:* ${bookingData.confirmationCode}
+
+We look forward to serving you! Please arrive on time.
+
+*Need to cancel or modify?* Please call us as soon as possible.
+
+Thank you for choosing ${bookingData.businessName}! 🙏`;
+
+      const whatsappLink = `https://wa.me/60142779902?text=${encodeURIComponent(confirmationMessage)}`;
+      const qrCode = await whatsappService.generateQRCode('60142779902', confirmationMessage);
 
       whatsappData = {
         link: whatsappLink,
         qrCode: qrCode,
-        phoneNumber: whatsappService.getPhoneNumber()
+        phoneNumber: '60142779902'
       };
 
       // Send WhatsApp confirmation message directly to customer
       if (customer.phone) {
         try {
-          const messageResult = await whatsappService.sendConfirmationMessage(bookingData, customer.phone);
+          logger.info(`Queued WhatsApp confirmation message for ${customer.firstName} ${customer.lastName} at ${customer.phone}`);
+          const messageResult = await whatsappService.sendBookingConfirmation(bookingData, customer.phone);
           if (messageResult.success) {
-            logger.info(`WhatsApp confirmation message sent to ${customer.firstName} ${customer.lastName} at ${customer.phone}`);
+            logger.info(`WhatsApp confirmation message sent to ${customer.firstName} ${customer.lastName} at +${customer.phone}`);
             whatsappData.messageSent = true;
             whatsappData.messageId = messageResult.messageId;
+            whatsappData.whatsappUrl = messageResult.whatsappUrl;
           } else {
-            logger.warn(`Failed to send WhatsApp confirmation message to ${customer.phone}: ${messageResult.error}`);
+            logger.warn(`Failed to send WhatsApp confirmation message to ${customer.phone}`);
             whatsappData.messageSent = false;
-            whatsappData.messageError = messageResult.error;
+            whatsappData.messageError = 'Failed to send confirmation message';
           }
         } catch (error) {
           logger.error('Error sending WhatsApp confirmation message:', error);
@@ -785,7 +869,7 @@ router.get('/', async (req, res, next) => {
                     business: {
                         select: {
                             name: true,
-                            type: true
+                            businessType: true
                         }
                     },
                     table: {
@@ -846,9 +930,30 @@ router.patch('/:id/status', async (req, res, next) => {
 
         // Send notification to customer about status change
         if (status === 'confirmed') {
-            await emailService.sendBookingConfirmation(booking);
+            const bookingData = {
+                customerName: `${booking.customer.firstName} ${booking.customer.lastName}`,
+                customerEmail: booking.customer.email || '',
+                businessName: booking.business.name,
+                bookingDate: booking.bookingDate.toISOString().split('T')[0],
+                bookingTime: booking.bookingTime.toLocaleTimeString(),
+                partySize: booking.partySize,
+                confirmationCode: booking.confirmationCode,
+                tableNumber: booking.table?.number || '',
+                specialRequests: booking.specialRequests || ''
+            };
+            await emailService.sendBookingConfirmation(bookingData);
         } else if (status === 'cancelled') {
-            await emailService.sendBookingCancellation(booking);
+            const cancellationData = {
+                customerName: `${booking.customer.firstName} ${booking.customer.lastName}`,
+                customerEmail: booking.customer.email || '',
+                businessName: booking.business.name,
+                bookingDate: booking.bookingDate.toISOString().split('T')[0],
+                bookingTime: booking.bookingTime.toLocaleTimeString(),
+                partySize: booking.partySize,
+                confirmationCode: booking.confirmationCode,
+                reason: booking.cancelledReason || 'Booking cancelled'
+            };
+            await emailService.sendBookingCancellation(cancellationData);
         }
 
         logger.info(`Booking ${id} status updated to ${status}`);
