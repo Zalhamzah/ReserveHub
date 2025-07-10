@@ -1,15 +1,15 @@
+# ReserveHub - Restaurant Reservation System
+
+## Ignore sensitive and generated files
+.env
+.env.*
+.env.backup
+
 # Dependencies
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # Build output
 dist/
@@ -18,9 +18,10 @@ build/
 # Logs
 logs/
 *.log
+lerna-debug.log*
 
 # Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
@@ -28,23 +29,39 @@ pids
 # Coverage directory used by tools like istanbul
 coverage/
 
-# IDE
+# Temp files
+*.tmp
+*.temp
+.tmp/
+.cache/
+*.json.backup
+booking_response.json
+
+# IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS
+# OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Database
 *.sqlite
+*.sqlite3
 *.db
 
-# Temporary files
-tmp/
-temp/
-
 # Test files
-test_*.js
+test-results/
+coverage/
+
+# Backup files
+*.backup
+*.bak

@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { param, validationResult } from 'express-validator';
+import { param, validationResult, body } from 'express-validator';
 import { prisma } from '@/utils/database';
 import { logger } from '@/utils/logger';
 import { ValidationError, NotFoundError } from '@/middleware/errorHandler';
@@ -285,6 +285,85 @@ router.get('/booking/:bookingId/reminder/qr', [
       },
       message: 'Reminder QR code generated successfully'
     });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Send WhatsApp confirmation message to customer
+router.post('/send-confirmation', [
+  body('bookingId').isString().notEmpty().withMessage('Booking ID is required'),
+  body('customerPhone').isString().notEmpty().withMessage('Customer phone number is required')
+], async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      throw new ValidationError('Validation failed', errors.array());
+    }
+
+    const { bookingId, customerPhone } = req.body;
+
+    // Get booking details
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        customer: {
+          select: {
+            firstName: true,
+            lastName: true,
+            phone: true
+          }
+        },
+        business: {
+          select: {
+            name: true
+          }
+        }
+      }
+    });
+
+    if (!booking) {
+      throw new NotFoundError('Booking not found');
+    }
+
+    // Prepare WhatsApp message data
+    const whatsappMessageData = {
+      customerName: `${booking.customer.firstName} ${booking.customer.lastName || ''}`.trim(),
+      businessName: booking.business.name,
+      bookingDate: moment(booking.bookingDate).format('MMMM Do, YYYY'),
+      bookingTime: moment(booking.bookingTime).format('h:mm A'),
+      partySize: booking.partySize,
+      confirmationCode: booking.confirmationCode,
+      serviceType: undefined, // Will be set for salon bookings
+      staffName: undefined    // Will be set for salon bookings
+    };
+
+    // Send WhatsApp message to customer
+    const messageResult = await whatsappService.sendConfirmationMessage(whatsappMessageData, customerPhone);
+    
+    if (messageResult.success) {
+      logger.info(`Manual WhatsApp confirmation sent to ${customerPhone} for booking ${booking.bookingNumber}`);
+      
+      res.json({
+        success: true,
+        data: {
+          messageId: messageResult.messageId,
+          customerPhone: customerPhone,
+          businessPhone: whatsappService.getFormattedPhoneNumber(),
+          bookingNumber: booking.bookingNumber
+        },
+        message: 'WhatsApp confirmation sent successfully'
+      });
+    } else {
+      logger.warn(`Failed to send manual WhatsApp confirmation to ${customerPhone}: ${messageResult.error}`);
+      
+      res.status(500).json({
+        success: false,
+        error: messageResult.error || 'Failed to send WhatsApp message',
+        message: 'Failed to send WhatsApp confirmation'
+      });
+    }
 
   } catch (error) {
     next(error);

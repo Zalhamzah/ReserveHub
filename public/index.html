@@ -12,20 +12,24 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             min-height: 100vh;
-            padding: 10px;
+            padding: 0;
+            margin: 0;
+            color: #2d3748;
         }
 
         .container {
-            max-width: 800px;
-            margin: 0 auto;
+            max-width: 480px;
+            margin: 20px auto;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08), 0 8px 30px rgba(0, 0, 0, 0.12);
             overflow: hidden;
             animation: slideIn 0.5s ease-out;
+            min-height: calc(100vh - 40px);
+            border: 1px solid #e2e8f0;
         }
 
         @keyframes slideIn {
@@ -42,85 +46,163 @@
         /* Business Type Selector */
         .business-selector {
             display: flex;
-            background: #f8f9fa;
-            border-radius: 15px;
-            margin: 20px;
-            padding: 5px;
-            gap: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            margin: 24px;
+            padding: 6px;
+            gap: 6px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .business-type {
             flex: 1;
-            padding: 15px;
+            padding: 18px 24px;
             background: transparent;
             border: none;
-            border-radius: 10px;
-            font-weight: 600;
+            border-radius: 12px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
+            color: white;
+            font-size: 16px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         .business-type.active {
-            background: #ff6b35;
-            color: white;
-            transform: scale(1.02);
+            background: white;
+            color: #FF6B35;
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(255, 107, 53, 0.3), 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-shadow: none;
         }
 
         .business-type:hover {
-            background: #fff3f0;
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
         }
 
         .business-type.active:hover {
-            background: #e55a2b;
+            background: white;
+            color: #FF6B35;
+            transform: scale(1.05) translateY(-2px);
         }
 
         .header {
-            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            background: linear-gradient(135deg, #FF6B35 0%, #FF8A50 50%, #FF6B35 100%);
             color: white;
-            padding: 30px;
+            padding: 50px 30px 40px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+            border-radius: 24px 24px 0 0;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+            animation: rotate 30s linear infinite;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+            font-size: 3rem;
+            margin-bottom: 12px;
+            font-weight: 900;
+            letter-spacing: -2px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
+            font-size: 1.3rem;
+            opacity: 0.95;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         .progress {
             display: flex;
-            background: #f8f9fa;
+            background: #f8fafc;
             padding: 0;
+            border-bottom: 1px solid #e2e8f0;
         }
 
         .progress-step {
             flex: 1;
-            padding: 20px;
+            padding: 24px 16px;
             text-align: center;
-            border-bottom: 3px solid #e9ecef;
-            transition: all 0.3s ease;
+            border-bottom: 4px solid #e2e8f0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            font-weight: 700;
+            font-size: 13px;
+            background: white;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .progress-step::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(135deg, #FF6B35 0%, #FF8A50 100%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 0;
+        }
+
+        .progress-step strong {
+            position: relative;
+            z-index: 1;
         }
 
         .progress-step.active {
-            background: #ff6b35;
             color: white;
-            border-bottom-color: #ff6b35;
-            animation: pulse 2s infinite;
+            border-bottom-color: #FF6B35;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+        }
+
+        .progress-step.active::before {
+            opacity: 1;
         }
 
         .progress-step.completed {
-            background: #28a745;
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
             color: white;
-            border-bottom-color: #28a745;
+            border-bottom-color: #10B981;
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.2);
         }
 
         .progress-step.completed::after {
@@ -139,32 +221,39 @@
         }
 
         .content {
-            padding: 40px;
-            animation: fadeIn 0.5s ease-in;
+            padding: 40px 30px;
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white;
+            min-height: 500px;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* Mobile Responsiveness */
         @media (max-width: 768px) {
             body {
-                padding: 5px;
+                padding: 0;
             }
 
             .container {
-                border-radius: 15px;
+                border-radius: 0;
                 margin: 0;
+                max-width: 100%;
             }
 
             .header {
-                padding: 20px;
+                padding: 30px 20px 25px;
             }
 
             .header h1 {
-                font-size: 2rem;
+                font-size: 2.4rem;
+            }
+
+            .business-selector {
+                margin: 15px;
             }
 
             .progress {
@@ -173,21 +262,21 @@
             }
 
             .progress-step {
-                padding: 15px;
+                padding: 16px 15px;
                 border-bottom: none;
-                border-left: 3px solid #e9ecef;
+                border-left: 4px solid #e2e8f0;
             }
 
             .progress-step.active {
-                border-left-color: #ff6b35;
+                border-left-color: #FF6B35;
             }
 
             .progress-step.completed {
-                border-left-color: #28a745;
+                border-left-color: #10B981;
             }
 
             .content {
-                padding: 20px;
+                padding: 25px 20px;
             }
 
             .form-row {
@@ -196,8 +285,8 @@
             }
 
             .time-slots {
-                grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-                gap: 10px;
+                grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+                gap: 12px;
             }
 
             .time-slot {
@@ -226,6 +315,16 @@
                 padding: 18px;
                 font-size: 16px;
             }
+
+            .phone-input-container {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .country-select {
+                flex: none;
+                width: 100%;
+            }
         }
 
         @media (max-width: 480px) {
@@ -251,54 +350,296 @@
         }
 
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 32px;
         }
 
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 24px;
         }
 
         label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
+            margin-bottom: 12px;
+            font-weight: 700;
+            color: #2d3748;
+            font-size: 15px;
+            letter-spacing: 0.2px;
         }
 
         input, select, textarea {
             width: 100%;
-            padding: 15px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
+            padding: 18px 24px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
             font-size: 16px;
-            transition: border-color 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #fafafa;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            color: #2d3748;
+            font-weight: 500;
         }
 
         input:focus, select:focus, textarea:focus {
             outline: none;
-            border-color: #ff6b35;
+            border-color: #FF6B35;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1), 0 4px 20px rgba(255, 107, 53, 0.15);
+            transform: translateY(-2px);
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: #a0aec0;
+            font-weight: 400;
+        }
+
+        /* Phone Number Input Styling */
+        .phone-input-container {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .country-select {
+            flex: 0 0 120px;
+            padding: 18px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            background: #fafafa;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .country-select:focus {
+            outline: none;
+            border-color: #FF6B35;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1);
+        }
+
+        .phone-input-container input[type="tel"] {
+            flex: 1;
+            margin: 0;
+        }
+
+        .phone-validation-message {
+            font-size: 13px;
+            margin-top: 8px;
+            color: #e53e3e;
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .phone-validation-message.show {
+            opacity: 1;
+        }
+
+        .phone-validation-message.success {
+            color: #10B981;
+        }
+
+        .phone-display-container {
+            margin-top: 10px;
+        }
+
+        .phone-display {
+            background: linear-gradient(135deg, #fff8f6 0%, #fff3f0 100%);
+            border: 2px solid #FF6B35;
+            border-radius: 15px;
+            padding: 12px 16px;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 50px;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.1);
+        }
+
+        .phone-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .phone-full-display {
+            font-size: 16px;
+            font-weight: 600;
+            color: #FF6B35;
+            font-family: 'Inter', monospace;
+            flex: 1;
+            text-align: left;
+        }
+
+        .phone-full-display.empty {
+            color: #a0aec0;
+            font-style: italic;
+        }
+
+        /* Confirmation Notifications */
+        .confirmation-notifications {
+            margin-bottom: 30px;
+        }
+
+        .email-notification {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: white;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .notification-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .notification-icon {
+            font-size: 28px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .notification-text h4 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .notification-text p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .whatsapp-choice {
+            background: linear-gradient(135deg, #fff8f6 0%, #fff3f0 100%);
+            border: 2px solid #FF6B35;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.15);
+        }
+
+        .choice-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .choice-icon {
+            font-size: 28px;
+            background: #FF6B35;
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .choice-text {
+            flex: 1;
+        }
+
+        .choice-text h4 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .choice-text p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .whatsapp-choice-btn {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+            white-space: nowrap;
+        }
+
+        .whatsapp-choice-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+        }
+
+        .whatsapp-choice-btn:active {
+            transform: translateY(0);
+        }
+
+        .booking-details {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .booking-details h3 {
+            margin: 0 0 20px 0;
+            color: #2d3748;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .whatsapp-choice-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .whatsapp-choice-btn:disabled:hover {
+            transform: none;
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
         }
 
         .time-slots {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
         }
 
         .time-slot {
-            padding: 15px;
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
+            padding: 20px 16px;
+            background: #fafafa;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 600;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 700;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+            color: #2d3748;
         }
 
         .time-slot::before {
@@ -308,8 +649,8 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
+            background: linear-gradient(90deg, transparent, rgba(255, 107, 53, 0.1), transparent);
+            transition: left 0.6s ease;
         }
 
         .time-slot:hover::before {
@@ -317,25 +658,27 @@
         }
 
         .time-slot:hover {
-            background: #fff3f0;
-            border-color: #ff6b35;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
+            background: white;
+            border-color: #FF6B35;
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(255, 107, 53, 0.2);
+            color: #FF6B35;
         }
 
         .time-slot.selected {
-            background: #ff6b35;
+            background: linear-gradient(135deg, #FF6B35 0%, #FF8A50 100%);
             color: white;
-            border-color: #ff6b35;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
+            border-color: #FF6B35;
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(255, 107, 53, 0.4);
         }
 
         .time-slot.unavailable {
-            background: #f5f5f5;
-            color: #999;
+            background: #f7fafc;
+            color: #a0aec0;
             cursor: not-allowed;
-            opacity: 0.6;
+            opacity: 0.5;
+            border-color: #e2e8f0;
         }
 
         /* Service Selection Styles */
@@ -347,15 +690,16 @@
         }
 
         .service-card {
-            background: white;
-            border: 2px solid #e9ecef;
-            border-radius: 12px;
-            padding: 20px;
+            background: #fafafa;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 28px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             text-align: left;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .service-card::before {
@@ -365,9 +709,9 @@
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, #ff6b35, #f7931e);
+            background: linear-gradient(90deg, #FF6B35, #FF8A50);
             transform: scaleX(0);
-            transition: transform 0.3s ease;
+            transition: transform 0.4s ease;
         }
 
         .service-card:hover::before {
@@ -375,16 +719,17 @@
         }
 
         .service-card:hover {
-            border-color: #ff6b35;
-            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.15);
-            transform: translateY(-3px);
+            border-color: #FF6B35;
+            background: white;
+            box-shadow: 0 16px 40px rgba(255, 107, 53, 0.2);
+            transform: translateY(-6px);
         }
 
         .service-card.selected {
-            border-color: #ff6b35;
-            background: #fff3f0;
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.2);
+            border-color: #FF6B35;
+            background: linear-gradient(135deg, #fff8f6 0%, #fff3f0 100%);
+            transform: translateY(-6px);
+            box-shadow: 0 16px 40px rgba(255, 107, 53, 0.3);
         }
 
         .service-card.selected::before {
@@ -419,34 +764,36 @@
         }
 
         .staff-card {
-            background: white;
-            border: 2px solid #e9ecef;
-            border-radius: 12px;
-            padding: 15px;
+            background: #fafafa;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 24px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             text-align: center;
             position: relative;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
 
         .staff-card:hover {
-            border-color: #ff6b35;
-            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.15);
-            transform: translateY(-3px);
+            border-color: #FF6B35;
+            background: white;
+            box-shadow: 0 12px 35px rgba(255, 107, 53, 0.2);
+            transform: translateY(-6px);
         }
 
         .staff-card.selected {
-            border-color: #ff6b35;
-            background: #fff3f0;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.2);
+            border-color: #FF6B35;
+            background: linear-gradient(135deg, #fff8f6 0%, #fff3f0 100%);
+            transform: translateY(-6px);
+            box-shadow: 0 12px 35px rgba(255, 107, 53, 0.3);
         }
 
         .staff-avatar {
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            background: linear-gradient(135deg, #FF6B35, #FF8A50);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -593,53 +940,79 @@
         }
 
         .btn {
-            padding: 15px 30px;
+            padding: 16px 32px;
             border: none;
-            border-radius: 8px;
+            border-radius: 25px;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s ease, height 0.3s ease;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
         }
 
         .btn-primary {
-            background: #ff6b35;
+            background: linear-gradient(135deg, #FF6B35 0%, #FF8A50 100%);
             color: white;
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.3);
         }
 
         .btn-primary:hover {
-            background: #e55a2b;
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
         }
 
         .btn-secondary {
-            background: #2c3e50;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
             color: white;
+            box-shadow: 0 6px 20px rgba(44, 62, 80, 0.3);
         }
 
         .btn-secondary:hover {
-            background: #1a252f;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(44, 62, 80, 0.4);
         }
 
         .selection-display {
-            background: #fff3f0;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #ffd4c4;
+            background: linear-gradient(135deg, #fff8f6 0%, #fff3f0 100%);
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            border: 2px solid #FFD4C4;
+            box-shadow: 0 4px 12px rgba(255, 212, 196, 0.3);
         }
 
         .selection-display h3 {
-            color: #d63384;
-            margin-bottom: 15px;
+            color: #FF6B35;
+            margin-bottom: 20px;
+            font-weight: 700;
         }
 
         .selection-item {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
-            padding: 8px 0;
-            border-bottom: 1px solid #e9ecef;
+            margin-bottom: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
         }
 
         .selection-item:last-child {
@@ -652,41 +1025,46 @@
         }
 
         .confirmation h2 {
-            color: #28a745;
-            margin-bottom: 20px;
-            font-size: 2rem;
+            color: #10B981;
+            margin-bottom: 24px;
+            font-size: 2.2rem;
+            font-weight: 800;
         }
 
         .confirmation-details {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 24px;
+            border-radius: 16px;
+            margin: 24px 0;
             text-align: left;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
         .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #f5c6cb;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            color: #dc2626;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            border: 2px solid #fecaca;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
+            font-weight: 600;
         }
 
         .loading {
             text-align: center;
-            padding: 20px;
+            padding: 24px;
         }
 
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #ff6b35;
+            border: 4px solid #f1f5f9;
+            border-top: 4px solid #FF6B35;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
+            margin: 0 auto 15px;
         }
 
         @keyframes spin {
@@ -712,14 +1090,132 @@
         }
 
         .btn-primary:disabled {
-            background: #ccc;
+            background: #cbd5e0;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         .btn-primary:disabled:hover {
-            background: #ccc;
+            background: #cbd5e0;
             transform: none;
+            box-shadow: none;
+        }
+
+        /* Modern Card Styles */
+        .step {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .step h2 {
+            color: #2d3748;
+            margin-bottom: 32px;
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        /* Loading Overlay Enhancement */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 320px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .loading-content h3 {
+            color: #2d3748;
+            margin-bottom: 12px;
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+
+        .loading-content p {
+            color: #64748b;
+            margin-bottom: 24px;
+            font-size: 1rem;
+        }
+
+        /* Success Animation */
+        .success-checkmark {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #10B981;
+            position: relative;
+            margin: 0 auto 20px;
+            animation: checkmark-bounce 0.6s ease-in-out;
+        }
+
+        .success-checkmark::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        @keyframes checkmark-bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        /* Modern scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #FF6B35;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #e55a2b;
         }
     </style>
 </head>
@@ -897,8 +1393,8 @@
                         <input type="text" id="first-name" required>
                     </div>
                     <div class="form-group">
-                        <label for="last-name">Last Name</label>
-                        <input type="text" id="last-name" required>
+                        <label for="last-name">Last Name <span style="color: #a0aec0; font-size: 0.9em;">(Optional)</span></label>
+                        <input type="text" id="last-name" placeholder="Optional">
                     </div>
                 </div>
 
@@ -907,10 +1403,33 @@
                         <label for="email">Email</label>
                         <input type="email" id="email" required>
                     </div>
-                    <div class="form-group">
-                        <label for="phone">Phone Number</label>
-                        <input type="tel" id="phone" required>
-                    </div>
+                                            <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <div class="phone-input-container">
+                                <select id="country-code" class="country-select">
+                                    <option value="+60" data-country="MY">🇲🇾 +60</option>
+                                    <option value="+65" data-country="SG">🇸🇬 +65</option>
+                                    <option value="+1" data-country="US">🇺🇸 +1</option>
+                                    <option value="+44" data-country="GB">🇬🇧 +44</option>
+                                    <option value="+61" data-country="AU">🇦🇺 +61</option>
+                                    <option value="+86" data-country="CN">🇨🇳 +86</option>
+                                    <option value="+81" data-country="JP">🇯🇵 +81</option>
+                                    <option value="+82" data-country="KR">🇰🇷 +82</option>
+                                    <option value="+91" data-country="IN">🇮🇳 +91</option>
+                                    <option value="+62" data-country="ID">🇮🇩 +62</option>
+                                    <option value="+66" data-country="TH">🇹🇭 +66</option>
+                                    <option value="+84" data-country="VN">🇻🇳 +84</option>
+                                </select>
+                                <input type="tel" id="phone" placeholder="123456789" required>
+                            </div>
+                            <div class="phone-validation-message" id="phone-validation"></div>
+                            <div class="phone-display-container">
+                                <div class="phone-display" id="phone-display">
+                                    <span class="phone-label">Your phone number:</span>
+                                    <span class="phone-full-display" id="phone-full-display">-</span>
+                                </div>
+                            </div>
+                        </div>
                 </div>
 
                 <div class="buttons">
@@ -998,7 +1517,10 @@
             firstName: document.getElementById('first-name'),
             lastName: document.getElementById('last-name'),
             email: document.getElementById('email'),
-            phone: document.getElementById('phone')
+            phone: document.getElementById('phone'),
+            countryCode: document.getElementById('country-code'),
+            phoneValidation: document.getElementById('phone-validation'),
+            phoneFullDisplay: document.getElementById('phone-full-display')
         };
 
         // Initialize application
@@ -1050,6 +1572,10 @@
             document.getElementById('next-to-step-3').addEventListener('click', () => goToStep(3));
             document.getElementById('back-to-step-2').addEventListener('click', () => goToStep(2));
             document.getElementById('submit-reservation').addEventListener('click', submitReservation);
+
+            // Phone number validation
+            elements.phone.addEventListener('input', validatePhoneNumber);
+            elements.countryCode.addEventListener('change', validatePhoneNumber);
 
             // Floating action button
             document.getElementById('floating-action').addEventListener('click', () => {
@@ -1462,14 +1988,94 @@
             }
         }
 
-        function formatDisplayDate(dateString) {
+                function formatDisplayDate(dateString) {
             const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
+            return date.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
             });
+        }
+
+        // Phone number validation
+        function validatePhoneNumber() {
+            const phoneNumber = elements.phone.value.trim();
+            const countryCode = elements.countryCode.value;
+            const validationMessage = elements.phoneValidation;
+            const phoneDisplay = elements.phoneFullDisplay;
+
+            // Clear previous validation
+            validationMessage.classList.remove('show', 'success');
+            validationMessage.textContent = '';
+
+            // Update phone display
+            if (!phoneNumber) {
+                phoneDisplay.textContent = '-';
+                phoneDisplay.classList.add('empty');
+                return false;
+            } else {
+                const fullPhoneNumber = countryCode + phoneNumber;
+                phoneDisplay.textContent = fullPhoneNumber;
+                phoneDisplay.classList.remove('empty');
+            }
+
+            // Remove any non-digit characters for validation
+            const digitsOnly = phoneNumber.replace(/\D/g, '');
+
+            // Country-specific validation patterns
+            const validationRules = {
+                '+60': { minLength: 9, maxLength: 10, pattern: /^1[0-9]{8,9}$/ }, // Malaysia
+                '+65': { minLength: 8, maxLength: 8, pattern: /^[689][0-9]{7}$/ }, // Singapore
+                '+1': { minLength: 10, maxLength: 10, pattern: /^[2-9][0-9]{9}$/ }, // US/Canada
+                '+44': { minLength: 10, maxLength: 11, pattern: /^[1-9][0-9]{8,10}$/ }, // UK
+                '+61': { minLength: 9, maxLength: 9, pattern: /^[2-578][0-9]{8}$/ }, // Australia
+                '+86': { minLength: 11, maxLength: 11, pattern: /^1[3-9][0-9]{9}$/ }, // China
+                '+81': { minLength: 10, maxLength: 11, pattern: /^[1-9][0-9]{8,10}$/ }, // Japan
+                '+82': { minLength: 9, maxLength: 10, pattern: /^[1-9][0-9]{7,9}$/ }, // South Korea
+                '+91': { minLength: 10, maxLength: 10, pattern: /^[6-9][0-9]{9}$/ }, // India
+                '+62': { minLength: 10, maxLength: 12, pattern: /^8[1-9][0-9]{7,10}$/ }, // Indonesia
+                '+66': { minLength: 9, maxLength: 9, pattern: /^[689][0-9]{8}$/ }, // Thailand
+                '+84': { minLength: 9, maxLength: 10, pattern: /^[1-9][0-9]{7,9}$/ } // Vietnam
+            };
+
+            const rule = validationRules[countryCode];
+            if (!rule) {
+                showValidationMessage('Country code not supported', false);
+                return false;
+            }
+
+            // Check length
+            if (digitsOnly.length < rule.minLength || digitsOnly.length > rule.maxLength) {
+                showValidationMessage(`Phone number should be ${rule.minLength}${rule.minLength !== rule.maxLength ? '-' + rule.maxLength : ''} digits`, false);
+                return false;
+            }
+
+            // Check pattern (for supported countries)
+            if (rule.pattern && !rule.pattern.test(digitsOnly)) {
+                showValidationMessage('Invalid phone number format', false);
+                return false;
+            }
+
+            showValidationMessage('✓ Valid phone number', true);
+            return true;
+        }
+
+        function showValidationMessage(message, isSuccess) {
+            const validationMessage = elements.phoneValidation;
+            validationMessage.textContent = message;
+            validationMessage.classList.add('show');
+            if (isSuccess) {
+                validationMessage.classList.add('success');
+            } else {
+                validationMessage.classList.remove('success');
+            }
+        }
+
+        function getFormattedPhoneNumber() {
+            const phoneNumber = elements.phone.value.trim().replace(/\D/g, '');
+            const countryCode = elements.countryCode.value;
+            return countryCode + phoneNumber;
         }
 
         async function submitReservation() {
@@ -1478,12 +2084,19 @@
             // Show loading overlay
             showLoadingOverlay();
 
-            // Validate form
+            // Validate phone number first
+            if (!validatePhoneNumber()) {
+                hideLoadingOverlay();
+                alert('Please enter a valid phone number.');
+                return;
+            }
+
+            // Prepare form data
             const baseFormData = {
                 firstName: elements.firstName.value.trim(),
-                lastName: elements.lastName.value.trim(),
+                lastName: elements.lastName.value.trim() || '',
                 email: elements.email.value.trim(),
-                phone: elements.phone.value.trim(),
+                phone: getFormattedPhoneNumber(),
                 businessId: CONFIG.BUSINESS_ID,
                 bookingDate: selectedDate,
                 bookingTime: selectedTime,
@@ -1514,7 +2127,7 @@
             }
 
             // Basic validation
-            if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
+            if (!formData.firstName || !formData.email || !formData.phone) {
                 hideLoadingOverlay();
                 alert('Please fill in all required fields.');
                 return;
@@ -1542,6 +2155,8 @@
                 
                 if (businessType === 'restaurant') {
                     // Use existing restaurant API
+                    console.log('Sending booking request:', formData);
+                    
                     response = await fetch(`${CONFIG.API_BASE_URL}/bookings/public/reserve`, {
                         method: 'POST',
                         headers: {
@@ -1549,7 +2164,18 @@
                         },
                         body: JSON.stringify(formData)
                     });
+                    
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('API Error Response:', errorText);
+                        throw new Error(`API Error (${response.status}): ${errorText}`);
+                    }
+                    
                     result = await response.json();
+                    console.log('API Success Response:', result);
                 } else {
                     // Simulate salon booking API call
                     console.log('Processing salon booking (mocked)...');
@@ -1593,6 +2219,9 @@
                     reservationData = result.data.booking;
                     // Store full booking response for WhatsApp access
                     window.lastBookingResponse = result.data;
+                    // Store booking ID and customer phone for WhatsApp confirmation
+                    window.currentBookingId = result.data.booking.id;
+                    window.currentCustomerPhone = getFormattedPhoneNumber();
                     hideLoadingOverlay();
                     showSuccessAnimation();
                     setTimeout(() => {
@@ -1659,11 +2288,39 @@
                 `;
             }
             
+            // Add email confirmation notification
             confirmationDetails.innerHTML = `
-                <div class="selection-item">
-                    <span><strong>Confirmation Code:</strong></span>
-                    <span>${reservationData.confirmationCode}</span>
+                <div class="confirmation-notifications">
+                    <div class="email-notification">
+                        <div class="notification-content">
+                            <div class="notification-icon">📧</div>
+                            <div class="notification-text">
+                                <h4>Email Confirmation Sent!</h4>
+                                <p>We've sent your booking confirmation to <strong>${reservationData.customer.email}</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="whatsapp-choice">
+                        <div class="choice-content">
+                            <div class="choice-icon">📱</div>
+                            <div class="choice-text">
+                                <h4>Want it on WhatsApp too?</h4>
+                                <p>Get your confirmation details sent directly to your WhatsApp</p>
+                            </div>
+                            <button class="whatsapp-choice-btn" onclick="showWhatsAppConfirmation()">
+                                💬 Send to WhatsApp
+                            </button>
+                        </div>
+                    </div>
                 </div>
+                
+                <div class="booking-details">
+                    <h3>📋 Booking Details</h3>
+                    <div class="selection-item">
+                        <span><strong>Confirmation Code:</strong></span>
+                        <span>${reservationData.confirmationCode}</span>
+                    </div>
                 <div class="selection-item">
                     <span><strong>Booking Number:</strong></span>
                     <span>${reservationData.bookingNumber}</span>
@@ -1697,35 +2354,106 @@
                     <span>${reservationData.specialRequests}</span>
                 </div>
                 ` : ''}
+                </div>
             `;
+        }
 
-            // Add WhatsApp confirmation section if available
-            if (reservationData.whatsapp || (window.lastBookingResponse && window.lastBookingResponse.whatsapp)) {
-                const whatsappData = reservationData.whatsapp || window.lastBookingResponse.whatsapp;
-                
-                confirmationDetails.innerHTML += `
-                    <div style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border-radius: 15px; color: white; text-align: center;">
-                        <h3 style="margin: 0 0 15px 0; font-size: 1.2em;">📱 WhatsApp Confirmation</h3>
-                        <p style="margin: 0 0 15px 0; opacity: 0.9;">Send confirmation message directly to our WhatsApp</p>
-                        
-                        ${whatsappData.qr ? `
-                            <div style="background: white; padding: 15px; border-radius: 10px; margin: 15px 0; display: inline-block;">
-                                <img src="${whatsappData.qr}" alt="WhatsApp QR Code" style="width: 150px; height: 150px; border-radius: 8px;">
-                            </div>
-                        ` : ''}
-                        
-                        <div style="margin-top: 15px;">
-                            <a href="${whatsappData.link}" target="_blank" style="display: inline-block; background: rgba(255,255,255,0.2); color: white; padding: 12px 25px; text-decoration: none; border-radius: 25px; font-weight: bold; border: 2px solid rgba(255,255,255,0.3); transition: all 0.3s;">
-                                💬 Send WhatsApp Message
-                            </a>
-                        </div>
-                        
-                        <p style="margin: 15px 0 0 0; font-size: 0.9em; opacity: 0.8;">
-                            Scan QR code or click button to send confirmation via WhatsApp
-                        </p>
-                    </div>
-                `;
+        async function showWhatsAppConfirmation() {
+            const confirmationDetails = document.getElementById('confirmation-details');
+            const whatsappButton = document.querySelector('.whatsapp-choice-btn');
+            
+            // Disable button and show loading state
+            if (whatsappButton) {
+                whatsappButton.disabled = true;
+                whatsappButton.innerHTML = '⏳ Sending...';
             }
+            
+            // Check if we have the required data
+            if (!window.currentBookingId || !window.currentCustomerPhone) {
+                console.error('Missing booking ID or customer phone');
+                showWhatsAppError('Unable to send WhatsApp confirmation. Missing booking information.');
+                return;
+            }
+            
+            try {
+                // Call the API to send WhatsApp message
+                const response = await fetch(`${CONFIG.API_BASE_URL}/whatsapp/send-confirmation`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        bookingId: window.currentBookingId,
+                        customerPhone: window.currentCustomerPhone
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Success - hide choice section and show success message
+                    const whatsappChoice = document.querySelector('.whatsapp-choice');
+                    if (whatsappChoice) {
+                        whatsappChoice.style.display = 'none';
+                    }
+                    
+                    // Show success message
+                    const successSection = document.createElement('div');
+                    successSection.className = 'whatsapp-success-section';
+                    successSection.innerHTML = `
+                        <div style="margin-top: 20px; padding: 20px; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border-radius: 15px; color: white; text-align: center; animation: fadeInUp 0.5s ease;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
+                            <h3 style="margin: 0 0 15px 0; font-size: 1.2em;">WhatsApp Confirmation Sent!</h3>
+                            <p style="margin: 0 0 15px 0; opacity: 0.9;">Your booking confirmation has been sent to your WhatsApp number:</p>
+                            <p style="margin: 0 0 15px 0; font-weight: bold; font-size: 1.1em;">${window.currentCustomerPhone}</p>
+                            <p style="margin: 0; font-size: 0.9em; opacity: 0.8;">Check your WhatsApp messages for the confirmation details from +60142779902</p>
+                        </div>
+                    `;
+                    
+                    confirmationDetails.appendChild(successSection);
+                    
+                    console.log('WhatsApp confirmation sent successfully:', result);
+                } else {
+                    // Error from API
+                    console.error('API error:', result);
+                    showWhatsAppError(result.error || 'Failed to send WhatsApp confirmation');
+                }
+            } catch (error) {
+                console.error('Error sending WhatsApp confirmation:', error);
+                showWhatsAppError('Network error. Please try again.');
+            }
+        }
+        
+        function showWhatsAppError(message) {
+            const confirmationDetails = document.getElementById('confirmation-details');
+            const whatsappButton = document.querySelector('.whatsapp-choice-btn');
+            
+            // Re-enable button
+            if (whatsappButton) {
+                whatsappButton.disabled = false;
+                whatsappButton.innerHTML = '💬 Send to WhatsApp';
+            }
+            
+            // Show error message
+            const errorSection = document.createElement('div');
+            errorSection.className = 'whatsapp-error-section';
+            errorSection.innerHTML = `
+                <div style="margin-top: 20px; padding: 20px; background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); border-radius: 15px; color: white; text-align: center; animation: fadeInUp 0.5s ease;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">❌</div>
+                    <h3 style="margin: 0 0 15px 0; font-size: 1.2em;">WhatsApp Confirmation Failed</h3>
+                    <p style="margin: 0 0 15px 0; opacity: 0.9;">${message}</p>
+                    <p style="margin: 0; font-size: 0.9em; opacity: 0.8;">Please try again or contact us directly at +60142779902</p>
+                </div>
+            `;
+            
+            confirmationDetails.appendChild(errorSection);
+            
+            // Remove error message after 5 seconds
+            setTimeout(() => {
+                if (errorSection.parentNode) {
+                    errorSection.parentNode.removeChild(errorSection);
+                }
+            }, 5000);
         }
     </script>
 </body>

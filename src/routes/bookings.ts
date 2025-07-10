@@ -86,7 +86,7 @@ router.get('/business/:businessId', async (req: Request, res: Response, next: Ne
 // Public endpoint for customer reservations (no auth required)
 const publicBookingValidation = [
   body('firstName').isString().isLength({ min: 1, max: 50 }).withMessage('First name is required and must be 1-50 characters'),
-  body('lastName').isString().isLength({ min: 1, max: 50 }).withMessage('Last name is required and must be 1-50 characters'),
+  body('lastName').optional().isString().isLength({ min: 0, max: 50 }).withMessage('Last name must be 0-50 characters'),
   body('email').isEmail().withMessage('Valid email is required'),
   body('phone').isString().matches(/^\+?[\d\s\-\(\)]+$/).withMessage('Valid phone number is required'),
   body('businessId').isString().notEmpty().withMessage('Business ID is required'),
@@ -193,29 +193,119 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
     });
 
     if (!customer) {
-      // Create new customer
-      customer = await prisma.customer.create({
-        data: {
-          firstName,
-          lastName,
-          email,
+      // No customer found by email, check if phone number exists
+      const existingPhoneCustomer = await prisma.customer.findFirst({
+        where: {
+          phone,
+          businessId
+        }
+      });
+
+      if (existingPhoneCustomer) {
+        // Phone number exists, check if it's likely the same person
+        const isSamePerson = existingPhoneCustomer.firstName.toLowerCase() === firstName.toLowerCase() ||
+                            existingPhoneCustomer.email.toLowerCase() === email.toLowerCase();
+        
+        if (isSamePerson) {
+          // Likely the same person, update their information
+          customer = await prisma.customer.update({
+            where: { id: existingPhoneCustomer.id },
+            data: {
+              firstName,
+              lastName: lastName || existingPhoneCustomer.lastName,
+              email,
+              isActive: true
+            }
+          });
+          logger.info(`Updated existing customer ${customer.id} with new email ${email}`);
+        } else {
+          // Different person with same phone number - allow booking but log warning
+          logger.warn(`Phone number ${phone} is used by different customer ${existingPhoneCustomer.firstName} ${existingPhoneCustomer.lastName}, creating new customer record for ${firstName} ${lastName}`);
+          
+          // Create new customer anyway - families may share phone numbers
+          customer = await prisma.customer.create({
+            data: {
+              firstName,
+              lastName,
+              email,
+              phone,
+              businessId,
+              vipStatus: 'REGULAR',
+              isActive: true
+            }
+          });
+        }
+      } else {
+        // Phone number doesn't exist, create new customer
+        customer = await prisma.customer.create({
+          data: {
+            firstName,
+            lastName,
+            email,
+            phone,
+            businessId,
+            vipStatus: 'REGULAR',
+            isActive: true
+          }
+        });
+      }
+    } else {
+      // Customer found by email, check if phone number conflicts
+      const existingPhoneCustomer = await prisma.customer.findFirst({
+        where: {
           phone,
           businessId,
-          vipStatus: 'REGULAR',
-          isActive: true
+          NOT: {
+            id: customer.id
+          }
         }
       });
-    } else {
-      // Update existing customer info
-      customer = await prisma.customer.update({
-        where: { id: customer.id },
-        data: {
-          firstName,
-          lastName,
-          phone,
-          isActive: true
+
+      if (existingPhoneCustomer) {
+        // Phone number is used by another customer
+        const isSimilarPerson = existingPhoneCustomer.firstName.toLowerCase() === firstName.toLowerCase();
+        
+        if (isSimilarPerson) {
+          // Likely the same person with different email addresses, merge the records
+          logger.info(`Merging customer records - ${customer.email} and ${existingPhoneCustomer.email} appear to be the same person`);
+          
+          // Update the found email customer with the phone number
+          customer = await prisma.customer.update({
+            where: { id: customer.id },
+            data: {
+              firstName,
+              lastName: lastName || customer.lastName,
+              phone,
+              isActive: true
+            }
+          });
+        } else {
+          // Different people sharing a phone number (family, etc.)
+          logger.warn(`Phone number ${phone} shared between ${customer.firstName} ${customer.lastName} and ${existingPhoneCustomer.firstName} ${existingPhoneCustomer.lastName}`);
+          
+          // Update customer with phone number anyway
+          customer = await prisma.customer.update({
+            where: { id: customer.id },
+            data: {
+              firstName,
+              lastName: lastName || customer.lastName,
+              phone,
+              isActive: true
+            }
+          });
         }
-      });
+      } else {
+        // No phone number conflict, update customer normally
+        customer = await prisma.customer.update({
+          where: { id: customer.id },
+          data: {
+            firstName,
+            lastName: lastName || customer.lastName,
+            phone,
+            isActive: true
+          }
+        });
+      }
     }
 
     // Verify location belongs to business (if provided)
@@ -372,6 +462,32 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
       logger.warn('Failed to generate WhatsApp QR code and link:', error);
     }
 
+    // Send email confirmation
+    let emailSent = false;
+    try {
+      const emailResult = await emailService.sendBookingConfirmation({
+        customerName: `${customer.firstName} ${customer.lastName || ''}`.trim(),
+        customerEmail: customer.email!,
+        businessName: business.name,
+        confirmationCode: booking.confirmationCode,
+        bookingDate: moment(booking.bookingDate).format('MMMM Do, YYYY'),
+        bookingTime: moment(booking.bookingTime).format('h:mm A'),
+        partySize: booking.partySize,
+        specialRequests: booking.specialRequests || undefined,
+        businessPhone: business.phone || undefined,
+        businessAddress: business.address || undefined
+      });
+      
+      if (emailResult) {
+        emailSent = true;
+        logger.info(`Email confirmation sent to ${customer.email} for booking ${booking.bookingNumber}`);
+      } else {
+        logger.warn(`Failed to send email confirmation to ${customer.email} for booking ${booking.bookingNumber}`);
+      }
+    } catch (error) {
+      logger.error('Error sending email confirmation:', error);
+    }
+
     // Schedule WhatsApp reminder for 1 hour before appointment
     try {
       // Update booking status to CONFIRMED first
@@ -427,7 +543,11 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
           specialRequests: booking.specialRequests,
           createdAt: booking.createdAt
         },
-        whatsapp: whatsappData
+        whatsapp: whatsappData,
+        email: {
+          sent: emailSent,
+          recipient: customer.email
+        }
       }
     });
 
