@@ -2952,15 +2952,223 @@
             document.getElementById('summary-party-size').textContent = selectedPartySize || '-';
         }
 
-        // Missing functions - add these to prevent JavaScript errors
-        function submitReservation() {
+        // Booking submission function
+        async function submitReservation() {
             console.log('Submit reservation clicked');
-            alert('Reservation submission functionality coming soon!');
+            
+            // Show loading overlay
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.style.display = 'flex';
+            
+            try {
+                // Collect form data
+                const formData = collectFormData();
+                
+                // Validate required fields
+                if (!validateFormData(formData)) {
+                    loadingOverlay.style.display = 'none';
+                    return;
+                }
+                
+                // Submit to API
+                const response = await fetch(`${CONFIG.API_BASE_URL}/bookings/public/reserve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Booking successful:', result);
+                    
+                    // Show confirmation step
+                    showConfirmationStep(result.data);
+                    goToStep(4);
+                } else {
+                    const error = await response.json();
+                    console.error('Booking failed:', error);
+                    alert(`Booking failed: ${error.message || 'Please try again'}`);
+                }
+            } catch (error) {
+                console.error('Error submitting reservation:', error);
+                alert('Failed to submit reservation. Please check your connection and try again.');
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        function collectFormData() {
+            const baseData = {
+                businessId: CONFIG.BUSINESS_ID,
+                bookingDate: selectedDate,
+                bookingTime: selectedTime,
+                firstName: elements.firstName.value.trim(),
+                lastName: elements.lastName.value.trim(),
+                email: elements.email.value.trim(),
+                phone: getFullPhoneNumber(),
+                specialRequests: elements.specialRequests.value.trim(),
+                source: 'WEB'
+            };
+
+            if (businessType === 'restaurant') {
+                return {
+                    ...baseData,
+                    partySize: parseInt(selectedPartySize),
+                    businessType: 'restaurant'
+                };
+            } else if (businessType === 'salon') {
+                return {
+                    ...baseData,
+                    serviceIds: selectedServices,
+                    staffId: selectedStaff,
+                    businessType: 'salon'
+                };
+            } else if (businessType === 'petshop') {
+                const petData = {
+                    ...baseData,
+                    businessType: 'petshop',
+                    petInfo: {
+                        petName: document.getElementById('pet-name')?.value.trim(),
+                        petType: document.getElementById('pet-type')?.value,
+                        petBreed: document.getElementById('pet-breed')?.value.trim(),
+                        petAge: document.getElementById('pet-age')?.value,
+                        petWeight: document.getElementById('pet-weight')?.value,
+                        medicalConditions: document.getElementById('pet-medical')?.value.trim(),
+                        specialInstructions: document.getElementById('pet-instructions')?.value.trim()
+                    }
+                };
+
+                if (selectedPetBookingType === 'services') {
+                    petData.serviceId = selectedPetService;
+                    petData.duration = 60; // Default duration
+                } else if (selectedPetBookingType === 'hotel') {
+                    petData.hotelBooking = {
+                        roomId: selectedPetHotelRoom,
+                        checkInDate: selectedCheckinDate,
+                        checkOutDate: selectedCheckoutDate,
+                        nights: selectedStayNights
+                    };
+                }
+
+                return petData;
+            }
+
+            return baseData;
+        }
+
+        function validateFormData(formData) {
+            const requiredFields = ['firstName', 'email', 'phone', 'bookingDate', 'bookingTime'];
+            
+            for (const field of requiredFields) {
+                if (!formData[field]) {
+                    alert(`Please fill in the ${field.replace(/([A-Z])/g, ' $1').toLowerCase()} field.`);
+                    return false;
+                }
+            }
+
+            // Business type specific validation
+            if (businessType === 'restaurant' && !formData.partySize) {
+                alert('Please select party size.');
+                return false;
+            }
+
+            if (businessType === 'salon' && (!formData.serviceIds || formData.serviceIds.length === 0)) {
+                alert('Please select at least one service.');
+                return false;
+            }
+
+            if (businessType === 'petshop') {
+                if (!selectedPetBookingType) {
+                    alert('Please select pet service type.');
+                    return false;
+                }
+                
+                if (selectedPetBookingType === 'services' && !selectedPetService) {
+                    alert('Please select a pet service.');
+                    return false;
+                }
+                
+                if (selectedPetBookingType === 'hotel' && !selectedPetHotelRoom) {
+                    alert('Please select a hotel room.');
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        function showConfirmationStep(bookingData) {
+            const confirmationDetails = document.getElementById('confirmation-details');
+            let detailsHTML = `
+                <div class="booking-summary">
+                    <h3>Booking Details</h3>
+                    <p><strong>Booking Number:</strong> ${bookingData.bookingNumber}</p>
+                    <p><strong>Date:</strong> ${new Date(bookingData.bookingDate).toLocaleDateString()}</p>
+                    <p><strong>Time:</strong> ${bookingData.bookingTime}</p>
+                    <p><strong>Customer:</strong> ${bookingData.customer.firstName} ${bookingData.customer.lastName}</p>
+                    <p><strong>Email:</strong> ${bookingData.customer.email}</p>
+                    <p><strong>Phone:</strong> ${bookingData.customer.phone}</p>
+            `;
+
+            if (businessType === 'restaurant') {
+                detailsHTML += `<p><strong>Party Size:</strong> ${bookingData.partySize}</p>`;
+            }
+
+            if (bookingData.specialRequests) {
+                detailsHTML += `<p><strong>Special Requests:</strong> ${bookingData.specialRequests}</p>`;
+            }
+
+            detailsHTML += `
+                    <div class="confirmation-message">
+                        <p>✅ <strong>Confirmation email has been sent to ${bookingData.customer.email}</strong></p>
+                        <p>📱 <strong>WhatsApp confirmation sent to ${bookingData.customer.phone}</strong></p>
+                    </div>
+                </div>
+            `;
+
+            confirmationDetails.innerHTML = detailsHTML;
         }
 
         function validatePhoneNumber() {
-            console.log('Phone number validation');
-            // Basic phone validation logic can be added here
+            const phoneInput = elements.phone;
+            const countryCode = elements.countryCode.value;
+            const phoneNumber = phoneInput.value.trim();
+            const phoneValidation = elements.phoneValidation;
+            const phoneFullDisplay = elements.phoneFullDisplay;
+            
+            // Clear previous validation
+            phoneValidation.textContent = '';
+            phoneValidation.className = 'phone-validation-message';
+            
+            if (!phoneNumber) {
+                phoneFullDisplay.textContent = '-';
+                phoneFullDisplay.classList.add('empty');
+                return;
+            }
+            
+            // Basic phone number validation
+            const phoneRegex = /^[0-9]{7,15}$/;
+            const isValid = phoneRegex.test(phoneNumber);
+            
+            if (isValid) {
+                phoneValidation.textContent = '✓ Valid phone number';
+                phoneValidation.classList.add('show', 'success');
+                phoneFullDisplay.textContent = `${countryCode}${phoneNumber}`;
+                phoneFullDisplay.classList.remove('empty');
+            } else {
+                phoneValidation.textContent = '✗ Please enter a valid phone number (7-15 digits)';
+                phoneValidation.classList.add('show');
+                phoneFullDisplay.textContent = phoneNumber ? `${countryCode}${phoneNumber}` : '-';
+                phoneFullDisplay.classList.remove('empty');
+            }
+        }
+
+        function getFullPhoneNumber() {
+            const countryCode = elements.countryCode.value;
+            const phoneNumber = elements.phone.value.trim();
+            return phoneNumber ? `${countryCode}${phoneNumber}` : '';
         }
 
         function loadTimeSlots() {
