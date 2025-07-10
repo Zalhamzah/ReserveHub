@@ -2528,6 +2528,9 @@
                     } else if (selectedPetBookingType === 'hotel') {
                         loadPetHotelRooms();
                     }
+                    
+                    // Update next button state after selection
+                    updatePetShopNextButton();
                 });
             });
 
@@ -2615,6 +2618,9 @@
                     // Show time slots
                     document.getElementById('pet-time-slots').style.display = 'block';
                     loadPetServiceTimeSlots();
+                    
+                    // Update next button state
+                    updatePetShopNextButton();
                 });
                 
                 container.appendChild(serviceCard);
@@ -2647,6 +2653,9 @@
                     // Show duration selection
                     document.getElementById('pet-hotel-duration').style.display = 'block';
                     setupDatePickers();
+                    
+                    // Update next button state
+                    updatePetShopNextButton();
                 });
                 
                 container.appendChild(roomCard);
@@ -2679,6 +2688,9 @@
                     
                     // Calculate and display pricing
                     calculatePetHotelPricing();
+                    
+                    // Update next button state
+                    updatePetShopNextButton();
                 }
             }
         }
@@ -2777,12 +2789,29 @@
             const nextButton = document.getElementById('next-to-step-2');
             const date = document.getElementById('petshop-date').value;
             
+            console.log('Updating pet shop next button:', {
+                businessType,
+                selectedPetBookingType,
+                date,
+                selectedPetService,
+                selectedTime,
+                selectedPetHotelRoom,
+                selectedStayNights
+            });
+            
             if (businessType === 'petshop') {
                 if (selectedPetBookingType === 'services') {
+                    // For services: need date, service, and time
                     nextButton.disabled = !(date && selectedPetService && selectedTime);
                 } else if (selectedPetBookingType === 'hotel') {
+                    // For hotel: need date, room, and stay duration
                     nextButton.disabled = !(date && selectedPetHotelRoom && selectedStayNights > 0);
+                } else {
+                    // If no booking type selected yet, just need date to enable showing options
+                    nextButton.disabled = !date;
                 }
+                
+                console.log('Next button disabled:', nextButton.disabled);
             }
         }
 
@@ -2846,8 +2875,23 @@
             const date = document.getElementById('petshop-date').value;
             selectedDate = date;
             
-            if (selectedPetBookingType === 'services' && selectedPetService) {
-                loadPetServiceTimeSlots();
+            if (date) {
+                // Show pet booking type selection when date is selected
+                const petBookingTypeSelection = document.getElementById('pet-booking-type-selection');
+                if (petBookingTypeSelection) {
+                    petBookingTypeSelection.style.display = 'block';
+                }
+                
+                // If booking type is already selected, trigger appropriate actions
+                if (selectedPetBookingType === 'services' && selectedPetService) {
+                    loadPetServiceTimeSlots();
+                } else if (selectedPetBookingType === 'hotel' && selectedPetHotelRoom) {
+                    // Show hotel duration selection
+                    const hotelDuration = document.getElementById('pet-hotel-duration');
+                    if (hotelDuration) {
+                        hotelDuration.style.display = 'block';
+                    }
+                }
             }
             
             updatePetShopNextButton();
