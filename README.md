@@ -1,59 +1,48 @@
-# 🎯 ReserveHub - Hackathon Project
+# 🍽️ ReserveHub - Modern Restaurant Reservation System
 
-## 🚀 Project Overview
-**ReserveHub** is a comprehensive booking reservation system designed as part of a hackathon project to create an integrated business management platform. This system serves as the core booking component that seamlessly integrates with other business automation tools.
+> **Complete restaurant booking platform with WhatsApp integration, email confirmations, and smart customer management**
 
-## 🎨 Live Demo
-- **Application URL**: `http://localhost:3000`
-- **API Documentation**: `http://localhost:3000/api-docs`
-- **Health Check**: `http://localhost:3000/api/v1/health`
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Express.js](https://img.shields.io/badge/Express.js-404D59?style=for-the-badge)](https://expressjs.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org/)
 
-## 🏆 Hackathon Goals Integration
+## ✨ Features
 
-This project is designed to support the complete hackathon vision:
+### 🎯 **Smart Booking System**
+- **📱 Mobile-optimized** responsive design with orange gradient theme
+- **🌍 International phone validation** for 12 countries (Malaysia, Singapore, US, UK, etc.)
+- **🧠 Intelligent customer matching** to prevent duplicate phone conflicts
+- **📧 Automatic email confirmations** with professional HTML templates
+- **💬 WhatsApp integration** for instant booking confirmations
+- **📝 Optional last name field** for improved user experience
 
-### ✅ **Completed Components**
-1. **📅 Booking Reservation System** - Full implementation with dual business type support
-2. **💬 Real-time Communications** - WebSocket integration for live updates
-3. **📊 Analytics Foundation** - Booking data collection and reporting structure
+### 🚀 **Technical Excellence**
+- **⚡ Express.js + TypeScript** backend with comprehensive error handling
+- **🗄️ PostgreSQL + Prisma ORM** for robust data management
+- **📊 Real-time availability** checking and booking validation
+- **🔄 WebSocket integration** for live updates
+- **🛡️ Comprehensive validation** and security measures
 
-### 🔄 **Ready for Integration**
-4. **🤝 Sales Follow-up Process** - Customer data capture for automated follow-ups
-5. **💰 Auto Quotation Generation** - Service-based pricing integration ready
-6. **📝 Meeting Summarization** - Booking data structure supports meeting scheduling
-7. **🧾 Invoicing System** - Transaction tracking foundation implemented
-
-## 🎯 Features
-
-### 🏢 **Dual Business Type Support**
-- **🍽️ Restaurant Reservations**: Table booking with party size and time slot selection
-- **💄 Salon Appointments**: Service selection, staff choice, and appointment scheduling
-
-### 🎨 **Interactive User Experience**
-- **📱 Mobile-responsive design** with touch-friendly interactions
+### 🎨 **Beautiful UI/UX**
+- **📱 Mobile-first design** with card-based layout
+- **🎨 Modern orange theme** (#FF6B35, #FF8A50) with gradients
 - **✨ Smooth animations** and loading states
-- **🎭 Dynamic UI** that adapts to business type
-- **🔄 Real-time availability** checking
-
-### 🛠️ **Technical Architecture**
-- **Backend**: Node.js + TypeScript + Express.js
-- **Database**: PostgreSQL with Prisma ORM
-- **Caching**: Redis for performance optimization
-- **Real-time**: WebSocket integration
-- **Frontend**: Vanilla JavaScript with modern CSS animations
+- **📞 Complete phone number display** in booking forms
+- **✅ Professional confirmation screens** with email & WhatsApp options
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 18+
 - PostgreSQL 14+
 - Redis 6+
 
 ### Installation
 ```bash
 # Clone repository
-git clone https://github.com/Zalhamzah/hackathon.git
-cd hackathon
+git clone https://github.com/Zalhamzah/ReserveHub.git
+cd ReserveHub
 
 # Install dependencies
 npm install
@@ -69,110 +58,130 @@ npx prisma migrate dev
 npm run dev
 ```
 
-### 🔧 Environment Variables
+### 🔧 Environment Configuration
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/reservehub"
-REDIS_URL="redis://localhost:6379"
-JWT_SECRET="your-jwt-secret"
-NODE_ENV="development"
-PORT=3000
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/connectreserve"
+
+# Email Configuration
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASSWORD=your_app_password
+EMAIL_FROM=Your Restaurant <your_email@gmail.com>
+
+# WhatsApp Business
+WHATSAPP_BUSINESS_NUMBER=60142779902
+BUSINESS_NAME=Your Restaurant Name
 ```
 
-## 📚 API Documentation
+## 🎯 Live Demo
 
-### 🏪 **Public Booking Endpoints**
-- `GET /api/v1/bookings/public/availability` - Get available time slots
-- `POST /api/v1/bookings/public/reserve` - Create new booking
+- **🌐 Frontend**: `http://localhost:3000`
+- **🔗 API Health**: `http://localhost:3000/api/v1/health`
+- **📊 Booking API**: `http://localhost:3000/api/v1/bookings/public/reserve`
 
-### 🔐 **Authentication Endpoints**
-- `POST /api/v1/auth/register` - Register new user
-- `POST /api/v1/auth/login` - User login
+## 📱 Mobile Experience
 
-### 📊 **Management Endpoints**
-- `GET /api/v1/bookings` - List all bookings
-- `GET /api/v1/analytics/bookings` - Booking analytics
-- `GET /api/v1/health` - System health check
+The system is designed mobile-first with:
+- **📏 420px container width** optimized for mobile screens
+- **👆 Touch-friendly interactions** with appropriate button sizes
+- **🔄 Responsive phone input** with country code selection
+- **✨ Smooth animations** that work well on mobile devices
 
-## 🏗️ Project Structure
+## 🌍 International Support
+
+**Phone Number Validation for 12 Countries:**
+- 🇲🇾 Malaysia (+60)
+- 🇸🇬 Singapore (+65)
+- 🇺🇸 United States (+1)
+- 🇬🇧 United Kingdom (+44)
+- 🇦🇺 Australia (+61)
+- 🇨🇳 China (+86)
+- 🇯🇵 Japan (+81)
+- 🇰🇷 South Korea (+82)
+- 🇮🇳 India (+91)
+- 🇮🇩 Indonesia (+62)
+- 🇹🇭 Thailand (+66)
+- 🇻🇳 Vietnam (+84)
+
+## 🏗️ Architecture
 
 ```
 ReserveHub/
 ├── src/
-│   ├── routes/          # API route handlers
-│   ├── services/        # Business logic services
-│   ├── middleware/      # Express middleware
-│   ├── utils/          # Utility functions
-│   └── config/         # Configuration files
-├── public/             # Frontend assets
-├── prisma/             # Database schema & migrations
-├── tests/              # Unit tests
-└── docs/               # Documentation
+│   ├── routes/              # API endpoints
+│   │   ├── bookings.ts      # Booking management
+│   │   ├── whatsapp.ts      # WhatsApp integration
+│   │   └── customers.ts     # Customer management
+│   ├── services/
+│   │   ├── emailService.ts  # Email confirmations
+│   │   ├── whatsappService.ts # WhatsApp messaging
+│   │   └── customerService.ts # Customer logic
+│   ├── middleware/          # Authentication & validation
+│   └── utils/               # Helper functions
+├── public/
+│   └── index.html          # Frontend application
+├── prisma/
+│   └── schema.prisma       # Database schema
+└── package.json
 ```
 
-## 🎨 User Interface
+## 🛡️ Security Features
 
-### 📱 **Mobile-First Design**
-- **Responsive layouts** for all screen sizes
-- **Touch-optimized** interactions
-- **Progressive Web App** ready
+- **🔐 JWT authentication** for protected routes
+- **📝 Input validation** with express-validator
+- **🛡️ CORS protection** with configurable origins
+- **⚡ Rate limiting** to prevent abuse
+- **🔒 SQL injection protection** via Prisma ORM
 
-### 🎭 **Business Type Selection**
-- **Dynamic interface** switching
-- **Context-aware** form validation
-- **Personalized** booking flows
+## 📊 API Endpoints
 
-### ✨ **Interactive Elements**
-- **Smooth hover effects** with CSS animations
-- **Loading overlays** with success confirmations
-- **Floating action buttons** for enhanced UX
-- **Progress indicators** with completion states
+### Public Booking
+```typescript
+POST /api/v1/bookings/public/reserve
+{
+  "firstName": "John",
+  "lastName": "Doe", // Optional
+  "email": "john@example.com",
+  "phone": "+60123456789",
+  "businessId": "business_id",
+  "bookingDate": "2025-07-15",
+  "bookingTime": "19:00",
+  "partySize": 2,
+  "specialRequests": "Window seat please"
+}
+```
 
-## 🔌 Integration Points
-
-### 🤝 **Sales Follow-up Integration**
-- Customer data collection during booking
-- Automated email/SMS notification hooks
-- Booking history tracking for personalized offers
-
-### 💰 **Quotation System Ready**
-- Service-based pricing structure
-- Dynamic pricing calculation hooks
-- Multi-service booking support
-
-### 📝 **Meeting & Invoicing Hooks**
-- Structured booking data for invoice generation
-- Payment status tracking
-- Receipt generation endpoints
-
-## 🧪 Testing
-
-```bash
-# Run unit tests
-npm test
-
-# Run integration tests
-npm run test:integration
-
-# Test coverage
-npm run test:coverage
+### WhatsApp Confirmation
+```typescript
+POST /api/v1/whatsapp/send-confirmation
+{
+  "bookingId": "booking_id",
+  "customerPhone": "+60123456789"
+}
 ```
 
 ## 🚀 Deployment
 
-### 🐳 **Docker Deployment**
+### Development
 ```bash
-# Build and run with Docker
-docker-compose up -d
+npm run dev          # Start development server
+npm run build        # Build for production
+npm start           # Start production server
 ```
 
-### ☁️ **Cloud Deployment**
-- **Heroku** ready with `Procfile`
-- **Vercel** compatible for frontend
-- **Railway** deployment configuration
+### Production
+```bash
+# Using Docker
+docker-compose up -d
+
+# Using PM2
+npm install -g pm2
+pm2 start dist/server.js --name "reservehub"
+```
 
 ## 🤝 Contributing
-
-This project is part of a hackathon submission. For development:
 
 1. Fork the repository
 2. Create feature branch (`git checkout -b feature/amazing-feature`)
@@ -180,33 +189,16 @@ This project is part of a hackathon submission. For development:
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📊 Hackathon Metrics
-
-- **📅 Development Time**: 2-3 days
-- **💻 Lines of Code**: ~32,000+
-- **🗃️ Database Tables**: 8 core tables
-- **🛠️ API Endpoints**: 15+ endpoints
-- **📱 Mobile Responsive**: 100%
-- **✨ Animation Effects**: 10+ smooth transitions
-
-## 🎯 Future Enhancements
-
-- **🔗 Multi-business dashboard**
-- **💳 Payment gateway integration**
-- **📧 Advanced notification system**
-- **📊 Advanced analytics dashboard**
-- **🤖 AI-powered booking optimization**
-
 ## 📞 Support
 
-For hackathon evaluation or technical questions:
-- **GitHub Issues**: [Report bugs or features](https://github.com/Zalhamzah/hackathon/issues)
-- **Email**: Contact through GitHub profile
+- **📧 Email**: zal.hamzah@storehub.com
+- **💬 WhatsApp**: +60142779902
+- **🐛 Issues**: [GitHub Issues](https://github.com/Zalhamzah/ReserveHub/issues)
 
-## 📜 License
+## 📄 License
 
-This project is part of a hackathon submission. All rights reserved.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-**🏆 Built with ❤️ for the hackathon by Zalhamzah** 
+**Built with ❤️ for modern restaurants seeking seamless reservation management**
