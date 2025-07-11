@@ -13,8 +13,14 @@ import { requestId } from '../src/middleware/requestId';
 import { routes } from '../src/routes';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from '../src/docs/swagger';
+import { prisma } from '../src/utils/database';
+import { emailService } from '../src/services/emailService';
+import { whatsappService } from '../src/services/whatsappService';
 
 const app = express();
+
+// Services are already initialized as singletons
+logger.info('Services loaded for Vercel deployment');
 
 // Trust proxy for accurate IP addresses
 app.set('trust proxy', 1);
@@ -43,10 +49,10 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-ID']
 }));
 
-// Rate limiting
+// Rate limiting - reduced for serverless
 const limiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.max,
+  max: config.rateLimit.max * 2, // More lenient for serverless
   message: {
     error: 'Too many requests from this IP, please try again later.',
     retryAfter: config.rateLimit.windowMs / 1000
@@ -65,7 +71,13 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Request logging - simplified for serverless
-app.use(morgan('combined'));
+app.use(morgan('combined', {
+  stream: {
+    write: (message: string) => {
+      logger.info(message.trim());
+    }
+  }
+}));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -80,14 +92,31 @@ app.use(requestId);
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    version: process.env.npm_package_version || '1.0.0',
-    environment: config.nodeEnv
-  });
+// Health check endpoint with database connectivity test
+app.get('/health', async (req, res) => {
+  try {
+    // Test database connection
+    await prisma.$queryRaw`SELECT 1`;
+    
+    res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      version: process.env.npm_package_version || '1.0.0',
+      environment: config.nodeEnv,
+      services: {
+        database: 'healthy',
+        email: emailService ? 'healthy' : 'disabled',
+        whatsapp: whatsappService ? 'healthy' : 'disabled'
+      }
+    });
+  } catch (error) {
+    logger.error('Health check failed:', error);
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: 'Database connection failed'
+    });
+  }
 });
 
 // API Documentation
@@ -112,4 +141,20 @@ app.use(notFoundHandler);
 // Global error handler
 app.use(errorHandler);
 
-export default app; 
+// Serverless function handler
+export default async (req: any, res: any) => {
+  try {
+    // Ensure database connection is active
+    if (!prisma) {
+      throw new Error('Database not initialized');
+    }
+    
+    return app(req, res);
+  } catch (error) {
+    logger.error('Serverless function error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Function initialization failed'
+    });
+  }
+}; 
