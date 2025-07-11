@@ -373,4 +373,78 @@ router.post('/send-confirmation', [
   }
 });
 
+// Send confirmation message using booking number (public endpoint)
+router.post('/public/send-confirmation', [
+  body('bookingNumber').isString().notEmpty().withMessage('Booking number is required'),
+  body('phoneNumber').isString().notEmpty().withMessage('Phone number is required')
+], async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      throw new ValidationError('Validation failed', errors.array());
+    }
+
+    const { bookingNumber, phoneNumber } = req.body;
+
+    // Get booking details using booking number
+    const booking = await prisma.booking.findFirst({
+      where: { 
+        bookingNumber: bookingNumber,
+        customer: {
+          phone: phoneNumber // Verify phone number matches for security
+        }
+      },
+      include: {
+        customer: {
+          select: {
+            firstName: true,
+            lastName: true,
+            phone: true
+          }
+        },
+        business: {
+          select: {
+            name: true
+          }
+        }
+      }
+    });
+
+    if (!booking) {
+      throw new NotFoundError('Booking not found or phone number does not match');
+    }
+
+    // Send WhatsApp confirmation
+    const bookingData = {
+      customerName: `${booking.customer.firstName} ${booking.customer.lastName}`,
+      businessName: booking.business.name,
+      bookingDate: moment(booking.bookingDate).format('MMMM Do, YYYY'),
+      bookingTime: moment(booking.bookingTime).format('h:mm A'),
+      partySize: booking.partySize,
+      confirmationCode: booking.confirmationCode,
+      bookingNumber: booking.bookingNumber
+    };
+
+    const result = await whatsappService.sendBookingConfirmation(bookingData, booking.customer.phone);
+
+    if (result.success) {
+      logger.info(`Public WhatsApp confirmation sent to ${booking.customer.phone} for booking ${booking.bookingNumber}`);
+    }
+
+    res.json({
+      success: result.success,
+      data: {
+        messageId: result.messageId,
+        whatsappUrl: result.whatsappUrl,
+        phoneNumber: booking.customer.phone,
+        bookingNumber: booking.bookingNumber
+      },
+      message: result.success ? 'WhatsApp confirmation sent successfully' : 'Failed to send WhatsApp confirmation'
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router; 

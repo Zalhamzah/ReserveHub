@@ -1550,27 +1550,65 @@
             margin-bottom: 12px;
         }
 
-        .whatsapp-qr-section {
-            background: #f9fafb;
+        .whatsapp-confirmation-section {
+            background: linear-gradient(135deg, #f0fff4 0%, #ecfdf5 100%);
             border-radius: 12px;
-            padding: 20px;
+            padding: 24px;
             margin: 16px 0;
             text-align: center;
-            border: 1px solid #e5e7eb;
+            border: 2px solid #25D366;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.15);
         }
 
-        .whatsapp-qr-section h4 {
+        .whatsapp-confirmation-section h4 {
             color: #25D366;
             margin-top: 0;
+            margin-bottom: 16px;
+            font-size: 1.2em;
         }
 
-        .whatsapp-qr-section img {
-            display: block;
-            margin: 16px auto;
-            max-width: 200px;
-            height: auto;
+        .whatsapp-button {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 0;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .whatsapp-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+            background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+        }
+
+        .whatsapp-button:active {
+            transform: translateY(0);
+        }
+
+        .whatsapp-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .whatsapp-message {
+            background: #f3f4f6;
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 12px 16px;
+            margin: 12px 0;
+            font-size: 14px;
+            color: #374151;
+            border-left: 4px solid #25D366;
         }
 
         .next-steps {
@@ -3508,21 +3546,31 @@
                 detailsHTML += `<p>⚠️ <strong>Email confirmation pending</strong></p>`;
             }
 
-            // WhatsApp confirmation
-            if (whatsappInfo.messageSent) {
-                detailsHTML += `<p>✅ <strong>WhatsApp confirmation sent to ${booking.customer.phone}</strong></p>`;
-                if (whatsappInfo.qrCode) {
-                    detailsHTML += `
-                        <div class="whatsapp-qr-section">
-                            <h4>📱 WhatsApp QR Code</h4>
-                            <p>Scan this QR code to open WhatsApp with your booking confirmation:</p>
-                            <img src="${whatsappInfo.qrCode}" alt="WhatsApp QR Code" style="max-width: 200px; border: 1px solid #ddd; border-radius: 8px; margin: 10px 0;">
-                            <p><small>Or <a href="${whatsappInfo.link}" target="_blank">click here to open WhatsApp</a></small></p>
-                        </div>
-                    `;
+            // WhatsApp confirmation with button
+            if (booking.customer.phone) {
+                if (whatsappInfo.messageSent) {
+                    detailsHTML += `<p>✅ <strong>WhatsApp confirmation sent to ${booking.customer.phone}</strong></p>`;
+                } else {
+                    detailsHTML += `<p>📱 <strong>WhatsApp confirmation available</strong></p>`;
                 }
+                
+                // Add WhatsApp confirmation button section
+                detailsHTML += `
+                    <div class="whatsapp-confirmation-section">
+                        <h4>📱 WhatsApp Booking Confirmation</h4>
+                        <p>Get your booking confirmation sent directly to your WhatsApp</p>
+                        <button class="whatsapp-button" onclick="sendWhatsAppConfirmation('${booking.bookingNumber}', '${booking.customer.phone}')">
+                            📱 Click to Get Booking Confirmation
+                        </button>
+                        <div class="whatsapp-message">
+                            <strong>Phone:</strong> ${booking.customer.phone}<br>
+                            <small>Make sure you have WhatsApp installed on this number</small>
+                        </div>
+                        <div id="whatsapp-status-${booking.bookingNumber}" style="margin-top: 12px;"></div>
+                    </div>
+                `;
             } else {
-                detailsHTML += `<p>⚠️ <strong>WhatsApp confirmation pending</strong></p>`;
+                detailsHTML += `<p>📱 <strong>WhatsApp confirmation not available (no phone number provided)</strong></p>`;
             }
 
             detailsHTML += `
@@ -3662,6 +3710,63 @@
             if (originalOnLoad) originalOnLoad();
             setupPetShopBooking();
         };
+
+        // WhatsApp Confirmation Function
+        async function sendWhatsAppConfirmation(bookingNumber, phoneNumber) {
+            const statusContainer = document.getElementById(`whatsapp-status-${bookingNumber}`);
+            const button = event.target;
+            
+            try {
+                // Disable button and show loading
+                button.disabled = true;
+                button.innerHTML = '📱 Sending...';
+                statusContainer.innerHTML = '<div style="color: #3b82f6;">📤 Sending WhatsApp confirmation...</div>';
+                
+                // Make API call to send WhatsApp confirmation
+                const response = await fetch(`${CONFIG.API_BASE_URL}/whatsapp/public/send-confirmation`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        bookingNumber: bookingNumber,
+                        phoneNumber: phoneNumber
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Success
+                    statusContainer.innerHTML = `
+                        <div style="color: #10b981; background: #f0fdf4; padding: 12px; border-radius: 8px; margin-top: 8px;">
+                            ✅ <strong>WhatsApp confirmation sent successfully!</strong><br>
+                            <small>Check your WhatsApp messages at ${phoneNumber}</small>
+                        </div>
+                    `;
+                    button.innerHTML = '✅ Confirmation Sent';
+                    button.style.background = '#10b981';
+                } else {
+                    throw new Error(result.message || 'Failed to send WhatsApp confirmation');
+                }
+                
+            } catch (error) {
+                console.error('Error sending WhatsApp confirmation:', error);
+                
+                // Show error message
+                statusContainer.innerHTML = `
+                    <div style="color: #ef4444; background: #fef2f2; padding: 12px; border-radius: 8px; margin-top: 8px;">
+                        ❌ <strong>Failed to send WhatsApp confirmation</strong><br>
+                        <small>${error.message}</small>
+                    </div>
+                `;
+                
+                // Re-enable button
+                button.disabled = false;
+                button.innerHTML = '📱 Try Again';
+                button.style.background = 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)';
+            }
+        }
 
         // 🔄 CACHE BUSTER: Force reload if old validation is detected
         const VALIDATION_VERSION = '2025-01-11-ULTRA-FORGIVING';
