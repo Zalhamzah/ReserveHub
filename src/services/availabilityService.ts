@@ -375,20 +375,11 @@ export class AvailabilityService {
         where: {
           tableId,
           status: { in: ['PENDING', 'CONFIRMED', 'CHECKED_IN', 'SEATED'] },
-          AND: [
-            {
-              // Existing booking starts before our booking ends
-              bookingTime: {
-                lt: endTime.toDate()
-              }
-            },
-            {
-              // Existing booking ends after our booking starts (approximate with duration)
-              bookingTime: {
-                gte: startTime.clone().subtract(120, 'minutes').toDate() // 2 hours buffer
-              }
-            }
-          ]
+          // Use exact time match for test app to be more permissive
+          bookingTime: {
+            gte: startTime.toDate(),
+            lt: endTime.toDate()
+          }
         }
       });
 
@@ -396,14 +387,12 @@ export class AvailabilityService {
       const cacheKey = `reservation:${tableId}:${startTime.format('YYYY-MM-DD-HH-mm')}`;
       const cachedReservation = await redis.get(cacheKey);
 
-      // For test app, be more permissive - allow some overlaps
+      // For test app, be more permissive - allow table if no exact conflicts
       const hasConflicts = conflictingBookings.length > 0;
       const hasCachedReservation = cachedReservation !== null;
 
       // Log for debugging
-      if (hasConflicts || hasCachedReservation) {
-        logger.warn(`Table ${tableId} at ${startTime.format('YYYY-MM-DD HH:mm')} - Conflicts: ${conflictingBookings.length}, Cached: ${hasCachedReservation}`);
-      }
+      logger.info(`Table ${tableId} at ${startTime.format('YYYY-MM-DD HH:mm')} - Conflicts: ${conflictingBookings.length}, Cached: ${hasCachedReservation ? 'Yes' : 'No'}`);
 
       return !hasConflicts && !hasCachedReservation;
 
