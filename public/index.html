@@ -3558,13 +3558,14 @@
                 detailsHTML += `
                     <div class="whatsapp-confirmation-section">
                         <h4>📱 WhatsApp Booking Confirmation</h4>
-                        <p>Get your booking confirmation sent directly to your WhatsApp</p>
+                        <p>Contact us on WhatsApp to get your detailed booking confirmation</p>
                         <button class="whatsapp-button" onclick="sendWhatsAppConfirmation('${booking.bookingNumber}', '${booking.customer.phone}')">
                             📱 Click to Get Booking Confirmation
                         </button>
                         <div class="whatsapp-message">
-                            <strong>Phone:</strong> ${booking.customer.phone}<br>
-                            <small>Make sure you have WhatsApp installed on this number</small>
+                            <strong>Your Phone:</strong> ${booking.customer.phone}<br>
+                            <strong>Our WhatsApp:</strong> +60142779902<br>
+                            <small>This will open WhatsApp with a pre-filled message to our business</small>
                         </div>
                         <div id="whatsapp-status-${booking.bookingNumber}" style="margin-top: 12px;"></div>
                     </div>
@@ -3711,58 +3712,58 @@
             setupPetShopBooking();
         };
 
-        // WhatsApp Confirmation Function
-        async function sendWhatsAppConfirmation(bookingNumber, phoneNumber) {
+        // WhatsApp Confirmation Function - Opens WhatsApp with pre-filled message
+        function sendWhatsAppConfirmation(bookingNumber, phoneNumber) {
             const statusContainer = document.getElementById(`whatsapp-status-${bookingNumber}`);
             const button = event.target;
             
             try {
-                // Disable button and show loading
-                button.disabled = true;
-                button.innerHTML = '📱 Sending...';
-                statusContainer.innerHTML = '<div style="color: #3b82f6;">📤 Sending WhatsApp confirmation...</div>';
+                // Show status message
+                button.innerHTML = '📱 Opening WhatsApp...';
+                statusContainer.innerHTML = '<div style="color: #3b82f6;">🔄 Preparing your WhatsApp message...</div>';
                 
-                // Make API call to send WhatsApp confirmation
-                const response = await fetch(`${CONFIG.API_BASE_URL}/whatsapp/public/send-confirmation`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        bookingNumber: bookingNumber,
-                        phoneNumber: phoneNumber
-                    })
-                });
+                // Create confirmation request message that customer will send to business
+                const businessPhone = '60142779902'; // Your business WhatsApp number
+                const message = `🎉 Hi! I would like to get my booking confirmation.
+
+📋 Booking Number: ${bookingNumber}
+📞 My Phone: ${phoneNumber}
+
+Please send me my booking details. Thank you!`;
                 
-                const result = await response.json();
+                // Encode message for WhatsApp URL
+                const encodedMessage = encodeURIComponent(message);
                 
-                if (response.ok && result.success) {
-                    // Success
+                // Create WhatsApp link to business number with pre-filled message
+                const whatsappUrl = `https://wa.me/${businessPhone}?text=${encodedMessage}`;
+                
+                // Open WhatsApp in new window/tab
+                window.open(whatsappUrl, '_blank');
+                
+                // Update status to success
+                setTimeout(() => {
                     statusContainer.innerHTML = `
                         <div style="color: #10b981; background: #f0fdf4; padding: 12px; border-radius: 8px; margin-top: 8px;">
-                            ✅ <strong>WhatsApp confirmation sent successfully!</strong><br>
-                            <small>Check your WhatsApp messages at ${phoneNumber}</small>
+                            ✅ <strong>WhatsApp opened successfully!</strong><br>
+                            <small>Send the pre-filled message to get your booking confirmation</small>
                         </div>
                     `;
-                    button.innerHTML = '✅ Confirmation Sent';
+                    button.innerHTML = '✅ WhatsApp Opened';
                     button.style.background = '#10b981';
-                } else {
-                    throw new Error(result.message || 'Failed to send WhatsApp confirmation');
-                }
+                }, 1000);
                 
             } catch (error) {
-                console.error('Error sending WhatsApp confirmation:', error);
+                console.error('Error opening WhatsApp:', error);
                 
                 // Show error message
                 statusContainer.innerHTML = `
                     <div style="color: #ef4444; background: #fef2f2; padding: 12px; border-radius: 8px; margin-top: 8px;">
-                        ❌ <strong>Failed to send WhatsApp confirmation</strong><br>
-                        <small>${error.message}</small>
+                        ❌ <strong>Failed to open WhatsApp</strong><br>
+                        <small>Please make sure WhatsApp is installed on your device</small>
                     </div>
                 `;
                 
-                // Re-enable button
-                button.disabled = false;
+                // Reset button
                 button.innerHTML = '📱 Try Again';
                 button.style.background = 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)';
             }
