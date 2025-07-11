@@ -3559,17 +3559,17 @@
                 detailsHTML += `
                     <div class="whatsapp-confirmation-section">
                         <h4>📱 WhatsApp Booking Confirmation</h4>
-                        <p>Contact us on WhatsApp to get your detailed booking confirmation</p>
+                        <p>Get your complete booking confirmation sent directly to your WhatsApp</p>
                         <button class="whatsapp-button" 
                                 id="whatsapp-btn-${booking.bookingNumber}"
                                 data-booking-number="${booking.bookingNumber}" 
                                 data-phone-number="${booking.customer.phone}">
-                            📱 Click to Get Booking Confirmation
+                            📱 Send Booking Details to WhatsApp
                         </button>
                         <div class="whatsapp-message">
-                            <strong>Your Phone:</strong> ${booking.customer.phone}<br>
-                            <strong>Our WhatsApp:</strong> +60142779902<br>
-                            <small>This will open WhatsApp with a pre-filled message to our business</small>
+                            <strong>Your WhatsApp:</strong> ${booking.customer.phone}<br>
+                            <strong>From:</strong> ReserveHub (+60142779902)<br>
+                            <small>We'll send you the same detailed confirmation as your email</small>
                         </div>
                         <div id="whatsapp-status-${booking.bookingNumber}" style="margin-top: 12px;"></div>
                     </div>
@@ -3729,9 +3729,9 @@
             setupPetShopBooking();
         };
 
-        // WhatsApp Confirmation Function - Opens WhatsApp with detailed booking confirmation
-        function sendWhatsAppConfirmation(bookingNumber, phoneNumber) {
-            console.log('WhatsApp button clicked!', { bookingNumber, phoneNumber });
+        // WhatsApp Confirmation Function - Sends booking details FROM business TO customer
+        async function sendWhatsAppConfirmation(bookingNumber, phoneNumber) {
+            console.log('Sending WhatsApp confirmation to customer:', { bookingNumber, phoneNumber });
             
             const statusContainer = document.getElementById(`whatsapp-status-${bookingNumber}`);
             const buttons = document.querySelectorAll('.whatsapp-button');
@@ -3749,112 +3749,63 @@
             }
             
             try {
-                // Show status message
-                clickedButton.innerHTML = '📱 Opening WhatsApp...';
+                // Show loading state
+                clickedButton.disabled = true;
+                clickedButton.innerHTML = '📱 Sending to WhatsApp...';
                 if (statusContainer) {
-                    statusContainer.innerHTML = '<div style="color: #3b82f6;">🔄 Preparing your detailed booking confirmation...</div>';
+                    statusContainer.innerHTML = '<div style="color: #3b82f6;">📤 Sending detailed booking confirmation to your WhatsApp...</div>';
                 }
                 
-                // Get current booking data from page (we'll extract it from the displayed confirmation)
-                const businessPhone = '60142779902'; // Your business WhatsApp number
+                // Make API call to send WhatsApp confirmation FROM business TO customer
+                const response = await fetch(`${CONFIG.API_BASE_URL}/whatsapp/public/send-confirmation`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        bookingNumber: bookingNumber,
+                        phoneNumber: phoneNumber
+                    })
+                });
                 
-                // Extract booking details from the displayed confirmation for a complete message
-                let bookingDate = 'Not specified';
-                let bookingTime = 'Not specified';
-                let confirmationCode = 'Not available';
-                let businessName = 'ReserveHub Test Restaurant';
+                const result = await response.json();
                 
-                try {
-                    // Try to extract details from the confirmation page
-                    const dateElements = document.querySelectorAll('p, div, span');
-                    dateElements.forEach(el => {
-                        const text = el.textContent || '';
-                        if (text.includes('Date:') && text.includes('2025')) {
-                            bookingDate = text.split('Date:')[1]?.trim() || bookingDate;
-                        }
-                        if (text.includes('Time:') && (text.includes('AM') || text.includes('PM'))) {
-                            bookingTime = text.split('Time:')[1]?.trim() || bookingTime;
-                        }
-                        if (text.includes('Confirmation Code:')) {
-                            confirmationCode = text.split('Confirmation Code:')[1]?.trim() || confirmationCode;
-                        }
-                    });
-                } catch (e) {
-                    console.log('Could not extract booking details from page:', e);
-                }
-                
-                // Create comprehensive booking confirmation message (same detail level as email)
-                const message = `🎉 *Booking Confirmation Request*
-
-Hi! I would like to receive my complete booking confirmation details for:
-
-📋 *My Booking Information:*
-🔢 Booking Number: ${bookingNumber}
-📞 My Phone: ${phoneNumber}
-📅 Date: ${bookingDate}
-🕐 Time: ${bookingTime}
-🎫 Confirmation Code: ${confirmationCode}
-
-Please send me the complete booking confirmation including:
-• ✅ Full reservation details
-• 🏪 Restaurant information & address  
-• ⏰ Important arrival reminders
-• 📞 Contact information
-• 🍽️ Any special requests noted
-• 📧 Same details as sent via email
-
-This will help me have all the information I need for my visit.
-
-Thank you for your excellent service!
-
----
-*Sent via ReserveHub booking system*`;
-                
-                // Encode message for WhatsApp URL
-                const encodedMessage = encodeURIComponent(message);
-                
-                // Create WhatsApp link to business number with pre-filled message
-                const whatsappUrl = `https://wa.me/${businessPhone}?text=${encodedMessage}`;
-                
-                console.log('Opening WhatsApp URL:', whatsappUrl);
-                
-                // Open WhatsApp in new window/tab
-                const newWindow = window.open(whatsappUrl, '_blank');
-                
-                // Check if popup was blocked
-                if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
-                    // Popup blocked, try direct redirect
-                    window.location.href = whatsappUrl;
-                }
-                
-                // Update status to success
-                setTimeout(() => {
+                if (response.ok && result.success) {
+                    // Success - WhatsApp sent to customer
                     if (statusContainer) {
                         statusContainer.innerHTML = `
                             <div style="color: #10b981; background: #f0fdf4; padding: 12px; border-radius: 8px; margin-top: 8px;">
-                                ✅ <strong>WhatsApp opened successfully!</strong><br>
-                                <small>Send the pre-filled message to receive your complete booking confirmation with all details</small>
+                                ✅ <strong>Booking confirmation sent to your WhatsApp!</strong><br>
+                                <small>Check your WhatsApp messages at ${phoneNumber} for complete booking details</small>
+                                ${result.data?.whatsappUrl ? `<br><br><a href="${result.data.whatsappUrl}" target="_blank" style="color: #059669; text-decoration: underline;">Or click here to open WhatsApp</a>` : ''}
                             </div>
                         `;
                     }
-                    clickedButton.innerHTML = '✅ WhatsApp Opened';
+                    clickedButton.innerHTML = '✅ Sent to WhatsApp';
                     clickedButton.style.background = '#10b981';
-                }, 1000);
+                    clickedButton.disabled = false;
+                    
+                    console.log('WhatsApp confirmation sent successfully:', result);
+                } else {
+                    throw new Error(result.message || 'Failed to send WhatsApp confirmation');
+                }
                 
             } catch (error) {
-                console.error('Error opening WhatsApp:', error);
+                console.error('Error sending WhatsApp confirmation:', error);
                 
                 // Show error message
                 if (statusContainer) {
                     statusContainer.innerHTML = `
                         <div style="color: #ef4444; background: #fef2f2; padding: 12px; border-radius: 8px; margin-top: 8px;">
-                            ❌ <strong>Failed to open WhatsApp</strong><br>
-                            <small>Error: ${error.message}. Please make sure WhatsApp is installed on your device</small>
+                            ❌ <strong>Failed to send WhatsApp confirmation</strong><br>
+                            <small>${error.message}</small><br>
+                            <small>Please ensure ${phoneNumber} has WhatsApp installed</small>
                         </div>
                     `;
                 }
                 
                 // Reset button
+                clickedButton.disabled = false;
                 clickedButton.innerHTML = '📱 Try Again';
                 clickedButton.style.background = 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)';
             }

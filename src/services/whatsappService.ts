@@ -181,25 +181,42 @@ class WhatsAppService {
   }
 
   /**
-   * Generate booking confirmation message
+   * Generate comprehensive booking confirmation message (same detail level as email)
    */
   private generateConfirmationMessage(data: WhatsAppBookingData): string {
     return `🎉 *Booking Confirmed!*
 
-Hi ${data.customerName}! Your reservation at *${data.businessName}* is confirmed.
+✅ *Reservation Confirmed*
 
+Dear *${data.customerName}*,
+
+Great news! Your reservation at *${data.businessName}* has been confirmed. We look forward to serving you!
+
+📋 *Booking Details*
+━━━━━━━━━━━━━━━━━━━━
 📅 *Date:* ${data.bookingDate}
 🕐 *Time:* ${data.bookingTime}
 👥 *Party Size:* ${data.partySize} ${data.partySize === 1 ? 'person' : 'people'}
 🎫 *Confirmation Code:* ${data.confirmationCode}
-${data.serviceType ? `🍽️ *Service:* ${data.serviceType}` : ''}
-${data.staffName ? `👨‍🍳 *Staff:* ${data.staffName}` : ''}
+${data.serviceType ? `🍽️ *Service:* ${data.serviceType}\n` : ''}${data.staffName ? `👨‍🍳 *Staff:* ${data.staffName}\n` : ''}
+⏰ *Important Reminders*
+━━━━━━━━━━━━━━━━━━━━
+• Please arrive on time for your reservation
+• Bring your confirmation code: *${data.confirmationCode}*
+• Contact us immediately if you need to cancel or modify
+• We'll send you a reminder before your booking
 
-We look forward to serving you! Please arrive on time.
+📞 *Contact Information*
+━━━━━━━━━━━━━━━━━━━━
+• WhatsApp: +60142779902
+• Restaurant: ${data.businessName}
 
-*Need to cancel or modify?* Please call us as soon as possible.
+📧 A detailed email confirmation has also been sent to you with the same information.
 
-Thank you for choosing ${data.businessName}! 🙏`;
+Thank you for choosing *${data.businessName}*! We can't wait to serve you! 🙏
+
+━━━━━━━━━━━━━━━━━━━━
+*This message was sent from ReserveHub*`;
   }
 
   /**
