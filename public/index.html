@@ -3000,28 +3000,48 @@
         }
 
         function collectFormData() {
+            // Get form elements safely
+            const firstNameEl = document.getElementById('first-name');
+            const lastNameEl = document.getElementById('last-name');
+            const emailEl = document.getElementById('email');
+            const specialRequestsEl = document.getElementById('special-requests');
+            const partySizeEl = document.getElementById('party-size');
+            
+            // Get booking date from selectedDate or fall back to date input
+            let bookingDate = selectedDate;
+            if (!bookingDate) {
+                const dateInput = document.getElementById('date-input');
+                if (dateInput && dateInput.value) {
+                    bookingDate = dateInput.value;
+                    selectedDate = bookingDate; // Update selectedDate for consistency
+                }
+            }
+            
             const baseData = {
-                businessId: CONFIG.BUSINESS_ID,
-                bookingDate: selectedDate,
+                businessId: 'cmcvm0c700001183pd3xmxx4e',
+                bookingDate: bookingDate,
                 bookingTime: selectedTime,
-                firstName: elements.firstName.value.trim(),
-                lastName: elements.lastName.value.trim(),
-                email: elements.email.value.trim(),
+                firstName: firstNameEl ? firstNameEl.value.trim() : '',
+                lastName: lastNameEl ? lastNameEl.value.trim() : '',
+                email: emailEl ? emailEl.value.trim() : '',
                 phone: getFullPhoneNumber(),
-                specialRequests: elements.specialRequests.value.trim(),
+                specialRequests: specialRequestsEl ? specialRequestsEl.value.trim() : '',
                 source: 'WEB'
             };
 
+            console.log('Collecting form data:', baseData);
+
             if (businessType === 'restaurant') {
+                const partySize = partySizeEl ? parseInt(partySizeEl.value) || 2 : 2;
                 return {
                     ...baseData,
-                    partySize: parseInt(selectedPartySize),
+                    partySize: partySize,
                     businessType: 'restaurant'
                 };
             } else if (businessType === 'salon') {
                 return {
                     ...baseData,
-                    serviceIds: selectedServices,
+                    serviceIds: selectedServices || [],
                     staffId: selectedStaff,
                     businessType: 'salon'
                 };
@@ -3030,13 +3050,13 @@
                     ...baseData,
                     businessType: 'petshop',
                     petInfo: {
-                        petName: document.getElementById('pet-name')?.value.trim(),
-                        petType: document.getElementById('pet-type')?.value,
-                        petBreed: document.getElementById('pet-breed')?.value.trim(),
-                        petAge: document.getElementById('pet-age')?.value,
-                        petWeight: document.getElementById('pet-weight')?.value,
-                        medicalConditions: document.getElementById('pet-medical')?.value.trim(),
-                        specialInstructions: document.getElementById('pet-instructions')?.value.trim()
+                        petName: document.getElementById('pet-name')?.value?.trim() || 'Pet',
+                        petType: document.getElementById('pet-type')?.value || 'dog',
+                        petBreed: document.getElementById('pet-breed')?.value?.trim() || 'Mixed',
+                        petAge: document.getElementById('pet-age')?.value || '1',
+                        petWeight: document.getElementById('pet-weight')?.value || '5',
+                        medicalConditions: document.getElementById('pet-medical')?.value?.trim() || '',
+                        specialInstructions: document.getElementById('pet-instructions')?.value?.trim() || ''
                     }
                 };
 
@@ -3050,6 +3070,8 @@
                         checkOutDate: selectedCheckoutDate,
                         nights: selectedStayNights
                     };
+                    // For hotel bookings, set a default check-in time
+                    petData.bookingTime = '10:00';
                 }
 
                 return petData;
@@ -3059,24 +3081,68 @@
         }
 
         function validateFormData(formData) {
-            const requiredFields = ['firstName', 'email', 'phone', 'bookingDate', 'bookingTime'];
+            console.log('Validating form data:', formData);
             
-            for (const field of requiredFields) {
-                if (!formData[field]) {
-                    alert(`Please fill in the ${field.replace(/([A-Z])/g, ' $1').toLowerCase()} field.`);
-                    return false;
-                }
+            // Check basic required fields with better validation
+            if (!formData.firstName?.trim()) {
+                alert('Please fill in the first name field.');
+                return false;
+            }
+            
+            if (!formData.email?.trim()) {
+                alert('Please fill in the email field.');
+                return false;
+            }
+            
+            if (!formData.phone?.trim()) {
+                alert('Please fill in the phone field.');
+                return false;
+            }
+            
+            // Check booking date - use selectedDate if formData.bookingDate is empty
+            if (!formData.bookingDate && !selectedDate) {
+                alert('Please select a booking date.');
+                return false;
+            }
+            
+            // Ensure booking date is set
+            if (!formData.bookingDate && selectedDate) {
+                formData.bookingDate = selectedDate;
             }
 
             // Business type specific validation
-            if (businessType === 'restaurant' && !formData.partySize) {
-                alert('Please select party size.');
-                return false;
+            if (businessType === 'restaurant') {
+                if (!formData.partySize) {
+                    alert('Please select party size.');
+                    return false;
+                }
+                
+                if (!formData.bookingTime && !selectedTime) {
+                    alert('Please select a time slot.');
+                    return false;
+                }
+                
+                // Use selectedTime if bookingTime is not set
+                if (!formData.bookingTime && selectedTime) {
+                    formData.bookingTime = selectedTime;
+                }
             }
 
-            if (businessType === 'salon' && (!formData.serviceIds || formData.serviceIds.length === 0)) {
-                alert('Please select at least one service.');
-                return false;
+            if (businessType === 'salon') {
+                if (!formData.serviceIds || formData.serviceIds.length === 0) {
+                    alert('Please select at least one service.');
+                    return false;
+                }
+                
+                if (!formData.bookingTime && !selectedTime) {
+                    alert('Please select a time slot.');
+                    return false;
+                }
+                
+                // Use selectedTime if bookingTime is not set
+                if (!formData.bookingTime && selectedTime) {
+                    formData.bookingTime = selectedTime;
+                }
             }
 
             if (businessType === 'petshop') {
@@ -3085,17 +3151,41 @@
                     return false;
                 }
                 
-                if (selectedPetBookingType === 'services' && !selectedPetService) {
-                    alert('Please select a pet service.');
-                    return false;
-                }
-                
-                if (selectedPetBookingType === 'hotel' && !selectedPetHotelRoom) {
-                    alert('Please select a hotel room.');
-                    return false;
+                if (selectedPetBookingType === 'services') {
+                    if (!selectedPetService) {
+                        alert('Please select a pet service.');
+                        return false;
+                    }
+                    
+                    if (!selectedTime) {
+                        alert('Please select a time slot.');
+                        return false;
+                    }
+                    
+                    formData.bookingTime = selectedTime;
+                } else if (selectedPetBookingType === 'hotel') {
+                    if (!selectedPetHotelRoom) {
+                        alert('Please select a hotel room.');
+                        return false;
+                    }
+                    
+                    if (!selectedCheckinDate || !selectedCheckoutDate) {
+                        alert('Please select check-in and check-out dates.');
+                        return false;
+                    }
+                    
+                    // For hotel bookings, set a default time
+                    formData.bookingTime = '10:00';
                 }
             }
 
+            // Final check for booking time
+            if (!formData.bookingTime) {
+                alert('Please select a booking time.');
+                return false;
+            }
+
+            console.log('Form validation passed:', formData);
             return true;
         }
 
@@ -3195,8 +3285,8 @@
 
         function loadRestaurantTimeSlots() {
             console.log('Loading restaurant time slots...');
-            const container = elements.timeSlotsContainer;
-            const loading = elements.slotsLoading;
+            const container = document.getElementById('time-slots');
+            const loading = document.getElementById('slots-loading');
             
             if (!container || !loading) {
                 console.error('Time slots container not found');
@@ -3206,10 +3296,15 @@
             loading.style.display = 'block';
             container.innerHTML = '';
             
-            // Simulate loading
+            // Generate comprehensive time slots for the restaurant
             setTimeout(() => {
                 const timeSlots = [
-                    '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30'
+                    // Lunch slots
+                    '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+                    // Afternoon break
+                    '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
+                    // Dinner slots
+                    '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00', '22:30'
                 ];
                 
                 timeSlots.forEach(time => {
@@ -3217,12 +3312,21 @@
                     slotElement.className = 'time-slot';
                     slotElement.textContent = time;
                     slotElement.addEventListener('click', function() {
+                        // Remove selected class from all slots
                         document.querySelectorAll('.time-slot').forEach(slot => {
                             slot.classList.remove('selected');
                         });
+                        // Add selected class to clicked slot
                         this.classList.add('selected');
                         selectedTime = time;
-                        document.getElementById('next-to-step-2').disabled = false;
+                        
+                        // Update next button state
+                        const nextButton = document.getElementById('next-to-step-2');
+                        if (nextButton) {
+                            nextButton.disabled = false;
+                        }
+                        
+                        console.log('Selected time:', time);
                     });
                     container.appendChild(slotElement);
                 });
