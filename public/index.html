@@ -1498,6 +1498,109 @@
             font-weight: bold;
         }
 
+        /* Booking Confirmation Styles */
+        .booking-summary {
+            background: #f8fffe;
+            border-radius: 16px;
+            padding: 32px;
+            margin-top: 20px;
+            border: 2px solid #10B981;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.1);
+        }
+
+        .booking-details {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+            border: 1px solid #e5e7eb;
+        }
+
+        .booking-number {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #10B981;
+            font-size: 1.1em;
+            background: #f0fdf4;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .confirmation-code {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #059669;
+            font-size: 1.1em;
+            background: #f0fdf4;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .confirmation-message {
+            background: #f0fdf4;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #10B981;
+        }
+
+        .confirmation-message h4 {
+            color: #059669;
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+
+        .whatsapp-qr-section {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 16px 0;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+
+        .whatsapp-qr-section h4 {
+            color: #25D366;
+            margin-top: 0;
+        }
+
+        .whatsapp-qr-section img {
+            display: block;
+            margin: 16px auto;
+            max-width: 200px;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .next-steps {
+            background: #fef3f2;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .next-steps h4 {
+            color: #d97706;
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+
+        .next-steps ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .next-steps li {
+            margin-bottom: 8px;
+            color: #92400e;
+        }
+
+        .next-steps strong {
+            color: #d97706;
+        }
+
         @keyframes checkmark-bounce {
             0%, 20%, 50%, 80%, 100% {
                 transform: translateY(0);
@@ -3012,7 +3115,26 @@
                 } else {
                     const error = await response.json();
                     console.error('Booking failed:', error);
-                    alert(`Booking failed: ${error.message || 'Please try again'}`);
+                    
+                    // Better error handling
+                    let errorMessage = 'Failed to submit reservation. Please try again.';
+                    
+                    if (error.error && error.error.message) {
+                        errorMessage = error.error.message;
+                    } else if (error.message) {
+                        errorMessage = error.message;
+                    }
+                    
+                    // Provide specific error messages
+                    if (errorMessage.includes('Time slot not available')) {
+                        errorMessage = 'The selected time slot is no longer available. Please choose a different time.';
+                    } else if (errorMessage.includes('Business not found')) {
+                        errorMessage = 'Service temporarily unavailable. Please try again later.';
+                    } else if (errorMessage.includes('validation')) {
+                        errorMessage = 'Please check your booking details and try again.';
+                    }
+                    
+                    alert(`❌ Booking Error\n\n${errorMessage}\n\nPlease try again with different details.`);
                 }
             } catch (error) {
                 console.error('Error submitting reservation:', error);
@@ -3270,29 +3392,91 @@
 
         function showConfirmationStep(bookingData) {
             const confirmationDetails = document.getElementById('confirmation-details');
+            
+            // Extract booking details from the response
+            const booking = bookingData.booking || bookingData;
+            const whatsappInfo = bookingData.whatsapp || {};
+            const emailInfo = bookingData.email || {};
+            
+            // Format booking date and time
+            const bookingDate = new Date(booking.bookingDate);
+            const bookingTime = new Date(booking.bookingTime);
+            const formattedDate = bookingDate.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            const formattedTime = bookingTime.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
             let detailsHTML = `
                 <div class="booking-summary">
-                    <h3>Booking Details</h3>
-                    <p><strong>Booking Number:</strong> ${bookingData.bookingNumber}</p>
-                    <p><strong>Date:</strong> ${new Date(bookingData.bookingDate).toLocaleDateString()}</p>
-                    <p><strong>Time:</strong> ${bookingData.bookingTime}</p>
-                    <p><strong>Customer:</strong> ${bookingData.customer.firstName} ${bookingData.customer.lastName}</p>
-                    <p><strong>Email:</strong> ${bookingData.customer.email}</p>
-                    <p><strong>Phone:</strong> ${bookingData.customer.phone}</p>
+                    <div class="success-checkmark"></div>
+                    <h3>🎉 Booking Confirmed!</h3>
+                    <div class="booking-details">
+                        <p><strong>Booking Number:</strong> <span class="booking-number">${booking.bookingNumber}</span></p>
+                        <p><strong>Confirmation Code:</strong> <span class="confirmation-code">${booking.confirmationCode}</span></p>
+                        <p><strong>Date:</strong> ${formattedDate}</p>
+                        <p><strong>Time:</strong> ${formattedTime}</p>
+                        <p><strong>Customer:</strong> ${booking.customer.firstName} ${booking.customer.lastName}</p>
+                        <p><strong>Email:</strong> ${booking.customer.email}</p>
+                        <p><strong>Phone:</strong> ${booking.customer.phone}</p>
             `;
 
             if (businessType === 'restaurant') {
-                detailsHTML += `<p><strong>Party Size:</strong> ${bookingData.partySize}</p>`;
+                detailsHTML += `<p><strong>Party Size:</strong> ${booking.partySize} people</p>`;
+                if (booking.table) {
+                    detailsHTML += `<p><strong>Table:</strong> Table ${booking.table.number}</p>`;
+                }
             }
 
-            if (bookingData.specialRequests) {
-                detailsHTML += `<p><strong>Special Requests:</strong> ${bookingData.specialRequests}</p>`;
+            if (booking.specialRequests) {
+                detailsHTML += `<p><strong>Special Requests:</strong> ${booking.specialRequests}</p>`;
             }
 
             detailsHTML += `
+                    </div>
                     <div class="confirmation-message">
-                        <p>✅ <strong>Confirmation email has been sent to ${bookingData.customer.email}</strong></p>
-                        <p>📱 <strong>WhatsApp confirmation sent to ${bookingData.customer.phone}</strong></p>
+                        <h4>📧 Notifications Sent</h4>
+            `;
+
+            // Email confirmation
+            if (emailInfo.sent) {
+                detailsHTML += `<p>✅ <strong>Email confirmation sent to ${emailInfo.recipient || booking.customer.email}</strong></p>`;
+            } else {
+                detailsHTML += `<p>⚠️ <strong>Email confirmation pending</strong></p>`;
+            }
+
+            // WhatsApp confirmation
+            if (whatsappInfo.messageSent) {
+                detailsHTML += `<p>✅ <strong>WhatsApp confirmation sent to ${booking.customer.phone}</strong></p>`;
+                if (whatsappInfo.qrCode) {
+                    detailsHTML += `
+                        <div class="whatsapp-qr-section">
+                            <h4>📱 WhatsApp QR Code</h4>
+                            <p>Scan this QR code to open WhatsApp with your booking confirmation:</p>
+                            <img src="${whatsappInfo.qrCode}" alt="WhatsApp QR Code" style="max-width: 200px; border: 1px solid #ddd; border-radius: 8px; margin: 10px 0;">
+                            <p><small>Or <a href="${whatsappInfo.link}" target="_blank">click here to open WhatsApp</a></small></p>
+                        </div>
+                    `;
+                }
+            } else {
+                detailsHTML += `<p>⚠️ <strong>WhatsApp confirmation pending</strong></p>`;
+            }
+
+            detailsHTML += `
+                    </div>
+                    <div class="next-steps">
+                        <h4>📋 Next Steps</h4>
+                        <ul>
+                            <li>Please arrive on time for your reservation</li>
+                            <li>Save your booking number: <strong>${booking.bookingNumber}</strong></li>
+                            <li>Check your email for detailed confirmation</li>
+                            <li>Contact us if you need to make changes</li>
+                        </ul>
                     </div>
                 </div>
             `;
