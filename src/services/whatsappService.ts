@@ -112,8 +112,8 @@ class WhatsAppService {
           }
         } catch (apiError) {
           logger.warn('WhatsApp Business API failed, falling back to direct link:', apiError);
+          }
         }
-      }
 
       // Fallback: Generate WhatsApp link
       const whatsappUrl = this.generateWhatsAppLink(cleanedPhone, message);
@@ -127,7 +127,7 @@ class WhatsAppService {
         whatsappUrl,
         messageId: `fallback_${Date.now()}`
       };
-
+      
     } catch (error) {
       logger.error('Error in WhatsApp sendMessage:', error);
       return { success: false };
@@ -165,7 +165,7 @@ class WhatsAppService {
     if (result.error) {
       throw new Error(`WhatsApp API error: ${result.error.message}`);
     }
-
+    
     return {
       success: true,
       messageId: result.messages?.[0]?.id
