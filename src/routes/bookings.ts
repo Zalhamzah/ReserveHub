@@ -269,105 +269,102 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
       });
     }
 
-    // Create or find customer
-    let customer = await prisma.customer.findFirst({
-      where: {
-        email,
-        businessId
-      }
-    });
-
-    if (!customer) {
-      // No customer found by email, check if phone number exists
-      const existingPhoneCustomer = await prisma.customer.findFirst({
+    // Create or find customer - BULLETPROOF logic to avoid unique constraint failures
+    let customer = null;
+    
+    try {
+      // Step 1: Try to find customer by email first
+      customer = await prisma.customer.findFirst({
         where: {
-          phone,
+          email,
           businessId
         }
       });
 
-      if (existingPhoneCustomer) {
-        // Phone number exists, check if it's likely the same person
-        const isSamePerson = existingPhoneCustomer.firstName.toLowerCase() === firstName.toLowerCase() ||
-                            existingPhoneCustomer.email.toLowerCase() === email.toLowerCase();
-        
-        if (isSamePerson) {
-          // Likely the same person, update their information
-          customer = await prisma.customer.update({
-            where: { id: existingPhoneCustomer.id },
-            data: {
-              firstName,
-              lastName: lastName || existingPhoneCustomer.lastName,
-              email,
-              isActive: true
-            }
-          });
-          logger.info(`Updated existing customer ${customer.id} with new email ${email}`);
-        } else {
-          // Different person with same phone number - use existing customer for booking
-          // Log the conflict but proceed with the existing customer
-          logger.warn(`Phone number ${phone} is used by existing customer ${existingPhoneCustomer.firstName} ${existingPhoneCustomer.lastName}, using existing customer for booking`);
-          customer = existingPhoneCustomer;
-        }
-      } else {
-        // Phone number doesn't exist, create new customer
-        customer = await prisma.customer.create({
-          data: {
-            firstName,
-            lastName,
-            email,
-            phone,
-            businessId,
-            vipStatus: 'REGULAR',
-            isActive: true
-          }
-        });
-      }
-    } else {
-      // Customer found by email, check if phone number conflicts
-      const existingPhoneCustomer = await prisma.customer.findFirst({
-        where: {
-          phone,
-          businessId,
-          NOT: {
-            id: customer.id
-          }
-        }
-      });
-
-      if (existingPhoneCustomer) {
-        // Phone number is used by another customer
-        const isSimilarPerson = existingPhoneCustomer.firstName.toLowerCase() === firstName.toLowerCase();
-        
-        if (isSimilarPerson) {
-          // Likely the same person with different email addresses, use the existing customer
-          logger.info(`Using existing customer ${existingPhoneCustomer.id} instead of merging (same person detected)`);
-          customer = existingPhoneCustomer;
-        } else {
-          // Different people sharing a phone number (family, etc.)
-          logger.warn(`Phone number ${phone} shared between ${customer.firstName} ${customer.lastName} and ${existingPhoneCustomer.firstName} ${existingPhoneCustomer.lastName}`);
-          
-          // Update customer without changing phone to avoid conflicts
-          customer = await prisma.customer.update({
-            where: { id: customer.id },
-            data: {
-              firstName,
-              lastName: lastName || customer.lastName,
-              isActive: true
-            }
-          });
-        }
-      } else {
-        // No phone number conflict, update customer normally
+      if (customer) {
+        // Customer exists with this email, update their info if needed
         customer = await prisma.customer.update({
           where: { id: customer.id },
           data: {
             firstName,
             lastName: lastName || customer.lastName,
-            phone,
+            phone: phone, // Update phone number
             isActive: true
           }
         });
+        logger.info(`Updated existing customer ${customer.id} found by email ${email}`);
+      } else {
+        // Step 2: No customer found by email, check by phone
+        const existingPhoneCustomer = await prisma.customer.findFirst({
+          where: {
+            phone,
+            businessId
+          }
+        });
+
+        if (existingPhoneCustomer) {
+          // Phone number exists, use existing customer and update email if different
+          customer = await prisma.customer.update({
+            where: { id: existingPhoneCustomer.id },
+            data: {
+              firstName,
+              lastName: lastName || existingPhoneCustomer.lastName,
+              email, // Update email
+              isActive: true
+            }
+          });
+          logger.info(`Updated existing customer ${customer.id} found by phone ${phone}, updated email to ${email}`);
+        } else {
+          // Step 3: Neither email nor phone exists, safe to create new customer
+          customer = await prisma.customer.create({
+            data: {
+              firstName,
+              lastName,
+              email,
+              phone,
+              businessId,
+              vipStatus: 'REGULAR',
+              isActive: true
+            }
+          });
+          logger.info(`Created new customer ${customer.id} for ${email} / ${phone}`);
+        }
+      }
+    } catch (error: any) {
+      // Fallback: If any unique constraint error occurs, try to find existing customer
+      if (error.code === 'P2002') {
+        logger.warn(`Unique constraint error during customer creation, finding existing customer for ${email} / ${phone}`);
+        
+        // Try to find by email or phone
+        customer = await prisma.customer.findFirst({
+          where: {
+            OR: [
+              { email, businessId },
+              { phone, businessId }
+            ]
+          }
+        });
+
+        if (!customer) {
+          // This should not happen, but create a fallback customer with modified phone
+          const fallbackPhone = phone + '_' + Date.now().toString().slice(-4);
+          customer = await prisma.customer.create({
+            data: {
+              firstName,
+              lastName,
+              email,
+              phone: fallbackPhone,
+              businessId,
+              vipStatus: 'REGULAR',
+              isActive: true
+            }
+          });
+          logger.warn(`Created fallback customer ${customer.id} with modified phone ${fallbackPhone}`);
+        } else {
+          logger.info(`Found existing customer ${customer.id} after constraint error`);
+        }
+      } else {
+        throw error; // Re-throw non-constraint errors
       }
     }
 
