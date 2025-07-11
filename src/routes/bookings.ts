@@ -304,21 +304,10 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
           });
           logger.info(`Updated existing customer ${customer.id} with new email ${email}`);
         } else {
-          // Different person with same phone number - allow booking but log warning
-          logger.warn(`Phone number ${phone} is used by different customer ${existingPhoneCustomer.firstName} ${existingPhoneCustomer.lastName}, creating new customer record for ${firstName} ${lastName}`);
-          
-          // Create new customer anyway - families may share phone numbers
-          customer = await prisma.customer.create({
-            data: {
-              firstName,
-              lastName,
-              email,
-              phone,
-              businessId,
-              vipStatus: 'REGULAR',
-              isActive: true
-            }
-          });
+          // Different person with same phone number - use existing customer for booking
+          // Log the conflict but proceed with the existing customer
+          logger.warn(`Phone number ${phone} is used by existing customer ${existingPhoneCustomer.firstName} ${existingPhoneCustomer.lastName}, using existing customer for booking`);
+          customer = existingPhoneCustomer;
         }
       } else {
         // Phone number doesn't exist, create new customer
@@ -358,29 +347,15 @@ router.post('/public/reserve', publicBookingValidation, async (req: Request, res
           // Different people sharing a phone number (family, etc.)
           logger.warn(`Phone number ${phone} shared between ${customer.firstName} ${customer.lastName} and ${existingPhoneCustomer.firstName} ${existingPhoneCustomer.lastName}`);
           
-          // For test app, allow duplicate phone numbers - update without phone
-          try {
-            customer = await prisma.customer.update({
-              where: { id: customer.id },
-              data: {
-                firstName,
-                lastName: lastName || customer.lastName,
-                phone,
-                isActive: true
-              }
-            });
-          } catch (error) {
-            // If unique constraint fails, update without phone number
-            logger.warn(`Phone number constraint failed, updating customer without phone number`);
-            customer = await prisma.customer.update({
-              where: { id: customer.id },
-              data: {
-                firstName,
-                lastName: lastName || customer.lastName,
-                isActive: true
-              }
-            });
-          }
+          // Update customer without changing phone to avoid conflicts
+          customer = await prisma.customer.update({
+            where: { id: customer.id },
+            data: {
+              firstName,
+              lastName: lastName || customer.lastName,
+              isActive: true
+            }
+          });
         }
       } else {
         // No phone number conflict, update customer normally
